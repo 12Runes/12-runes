@@ -25,9 +25,12 @@ const SET_CHRONO_ORDER = ["OGN", "OGS", "SFD", "UNL", "VEN"];
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // TURSO_DATABASE_URL/TURSO_AUTH_TOKEN apuntan a la base de producción (ver README); en local,
-// sin esas variables, cae en el archivo sqlite de DATABASE_URL (server/.env).
+// sin esas variables, cae en prisma/dev.db. Se resuelve como ruta absoluta (no relativa al cwd
+// del proceso) porque @libsql/client, a diferencia del motor nativo de Prisma, no la interpreta
+// relativa a schema.prisma.
+const localDbUrl = "file:" + fileURLToPath(new URL("../prisma/dev.db", import.meta.url));
 const libsqlClient = createClient({
-  url: process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? "file:./dev.db",
+  url: process.env.TURSO_DATABASE_URL ?? localDbUrl,
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 const prisma = new PrismaClient({ adapter: new PrismaLibSQL(libsqlClient) });
