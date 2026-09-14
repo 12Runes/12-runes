@@ -20,6 +20,9 @@
     --good: #0ca30c;
     --good-text: #006300;
     --critical: #d03b3b;
+    --warning-bg: #fdf3d8;
+    --warning-border: #e8c04c;
+    --warning-text: #7a5c00;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -37,6 +40,9 @@
       --good: #0ca30c;
       --good-text: #0ca30c;
       --critical: #e66767;
+      --warning-bg: #3a2f0f;
+      --warning-border: #7a5c00;
+      --warning-text: #f0c94a;
     }
   }
   :root[data-theme="dark"] {
@@ -54,6 +60,9 @@
     --good: #0ca30c;
     --good-text: #0ca30c;
     --critical: #e66767;
+    --warning-bg: #3a2f0f;
+    --warning-border: #7a5c00;
+    --warning-text: #f0c94a;
   }
 
   * { box-sizing: border-box; }
@@ -226,6 +235,22 @@
   .empty { color: var(--text-muted); padding: 20px; text-align: center; }
   .table-legend { font-size: 12px; color: var(--text-muted); margin: 8px 4px 0; line-height: 1.5; }
   .table-legend strong { color: var(--text-secondary); }
+
+  .dev-notice {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    color: var(--warning-text);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin: 10px 0 4px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .dev-notice svg { flex: none; margin-top: 1px; }
+  .dev-notice strong { color: inherit; }
 
   .card-name-cell { cursor: default; }
   .card-name-cell:hover { text-decoration: underline dotted; text-decoration-color: var(--text-muted); }
@@ -555,6 +580,10 @@
 
   <section class="view" data-view="mulligan">
     <h2>Simulador de mulligans</h2>
+    <div class="dev-notice">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span><strong>En desarrollo:</strong> las sugerencias de mulligan todavía se basan en pocas partidas. Serán más fiables cuanto más juguemos y se acumulen más datos.</span>
+    </div>
     <p class="table-legend">
       Genera una mano de apertura de 4 cartas al azar con tu arquetipo y te sugiere qué cartas (0, 1 o 2 —
       el máximo que deja cambiar el mulligan real) tiene más sentido devolver: por su win rate en concreto
