@@ -220,4 +220,3 @@ normalizado. Descubierto y validado con `extension-spike/` a partir de partidas 
   primera petición del día — aceptable para un grupo de amigos, no para un servicio con SLA. Tampoco hay
   autenticación ni límite de peticiones — para un grupo de amigos con la URL no es grave, pero antes de
   anunciarlo más ampliamente conviene añadir algo de rate-limiting.
-test
