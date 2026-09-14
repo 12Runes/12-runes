@@ -1,5 +1,6 @@
 import { fileURLToPath } from "url";
 import path from "path";
+import { readFileSync, readdirSync } from "fs";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import staticPlugin from "@fastify/static";
@@ -35,6 +36,32 @@ const libsqlClient = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 const prisma = new PrismaClient({ adapter: new PrismaLibSQL(libsqlClient) });
+
+// `prisma migrate deploy` no entiende URLs `libsql://` en esta versión de Prisma (necesitaría
+// prisma.config.ts + adapters en migrate, no solo en el cliente). En vez de aplicar cada
+// migración a mano contra Turso, el propio servidor las aplica al arrancar, con el mismo
+// libsqlClient que ya usa para todo lo demás — así un `git push` basta para que producción
+// tenga el esquema al día, sin tocar credenciales de Turso fuera de esta app. Tolera "ya
+// existe" porque esta base puede traer migraciones aplicadas a mano en el pasado (antes de que
+// existiera este runner) sin el historial de qué se aplicó.
+async function runPendingMigrations() {
+  const migrationsDir = fileURLToPath(new URL("../prisma/migrations", import.meta.url));
+  const folders = readdirSync(migrationsDir)
+    .filter((f) => f !== "migration_lock.toml")
+    .sort();
+  for (const folder of folders) {
+    const sql = readFileSync(path.join(migrationsDir, folder, "migration.sql"), "utf8");
+    try {
+      await libsqlClient.executeMultiple(sql);
+      console.log(`[migrate] applied ${folder}`);
+    } catch (err: any) {
+      if (/already exists|duplicate column/i.test(String(err?.message ?? err))) continue;
+      throw err;
+    }
+  }
+}
+await runPendingMigrations();
+
 const app = Fastify({ logger: true });
 
 await app.register(cors, { origin: true });
