@@ -311,6 +311,49 @@ export function computeDeckSignature(deck: DeckSummary | null | undefined): stri
   return createHash("sha1").update(parts.join("|")).digest("hex").slice(0, 12);
 }
 
+// Huella de la partida REAL, para detectar que dos jugadores han grabado la misma partida
+// cada uno por su lado (cada uno ve el log completo de los dos, así que la segunda subida no
+// aporta nada nuevo — ver README). No podemos usar `seriesId`/`startedAt`: los genera cada
+// instalación de la extensión por su cuenta (crypto.randomUUID()/Date.now() locales), así que
+// no coinciden entre los dos jugadores de una misma partida. En cambio el CONTENIDO de
+// `events` viene del propio motor de TCG Arena (id/playerId/timestamp de cada jugada, turno a
+// turno) y por tanto es idéntico para los dos lados de una misma partida real — el único campo
+// que difiere es `ts`, un `Date.now()` local de cuando cada cliente procesó el mensaje, que por
+// eso se excluye aquí.
+export function computeMatchFingerprint(events: unknown): string | null {
+  if (!Array.isArray(events) || events.length === 0) return null;
+
+  const canonical = events
+    .map((e: any) => {
+      if (!e || typeof e !== "object") return null;
+      if (e.eventType === "history") {
+        return {
+          t: "history",
+          id: e.id ?? null,
+          playerId: e.playerId ?? null,
+          type: e.type ?? null,
+          timestamp: e.timestamp ?? null,
+          cardId: e.params?.card?.cardId ?? e.params?.card?.id ?? null,
+        };
+      }
+      if (e.eventType === "turn") {
+        return { t: "turn", currentPlayer: e.currentPlayer ?? null, turnCount: e.turnCount ?? null };
+      }
+      if (e.eventType === "end-turn") {
+        const { ts, eventType, ...info } = e;
+        return { t: "end-turn", info };
+      }
+      return null;
+    })
+    .filter((e) => e !== null);
+
+  if (canonical.length === 0) return null;
+
+  // Orden estable independiente de en qué momento procesó cada cliente cada mensaje.
+  canonical.sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
+}
+
 export interface MatchForDeckStats {
   id: string;
   result: string;

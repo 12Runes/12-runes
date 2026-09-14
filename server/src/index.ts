@@ -3,7 +3,7 @@ import path from "path";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import staticPlugin from "@fastify/static";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import { PrismaLibSQL } from "@prisma/adapter-libsql";
 import { createClient } from "@libsql/client";
 import {
@@ -12,6 +12,7 @@ import {
   clusterMemberSignatures,
   computeDeckSignature,
   computeCardGrades,
+  computeMatchFingerprint,
   bothPerspectives,
   perspectivesForLegend,
   computeMatchupMatrix,
@@ -73,33 +74,49 @@ app.post("/matches", async (request, reply) => {
   if (!body.startedAt) return reply.code(400).send({ error: "startedAt is required" });
   const result = VALID_RESULTS.has(body.result) ? body.result : "UNKNOWN";
 
-  const match = await prisma.match.create({
-    data: {
-      gameName: body.gameName ?? "Riftbound",
-      contributorId: typeof body.contributorId === "string" ? body.contributorId : null,
-      seriesId: typeof body.seriesId === "string" ? body.seriesId : null,
-      gameNumber: typeof body.gameNumber === "number" ? body.gameNumber : null,
-      startedAt: new Date(body.startedAt),
-      endedAt: body.endedAt ? new Date(body.endedAt) : null,
-      result,
-      turnCount: body.turnCount ?? null,
-      onThePlay: typeof body.onThePlay === "boolean" ? body.onThePlay : null,
-      localPlayerId: body.localPlayerId ?? null,
-      localPseudo: body.localPseudo ?? null,
-      opponentPlayerId: body.opponentPlayerId ?? null,
-      opponentPseudo: body.opponentPseudo ?? null,
-      localLegendId: body.localDeck?.legendId ?? null,
-      localLegendName: body.localDeck?.legendName ?? null,
-      opponentLegendId: body.opponentDeck?.legendId ?? null,
-      opponentLegendName: body.opponentDeck?.legendName ?? null,
-      season: typeof body.season === "string" ? body.season : null,
-      localDeck: body.localDeck ? JSON.stringify(body.localDeck) : null,
-      opponentDeck: body.opponentDeck ? JSON.stringify(body.opponentDeck) : null,
-      events: JSON.stringify(body.events ?? []),
-    },
-  });
+  // Si el rival ya grabó esta misma partida por su lado, su subida ya trae el log completo de
+  // los dos jugadores (ver README, "cada partida cuenta el doble") — la nuestra no aportaría
+  // nada nuevo y solo duplicaría cada estadística. `matchFingerprint` es la misma huella para
+  // ambos lados (viene del propio log del motor del juego, no de nada que genere cada
+  // instalación por su cuenta), así que la restricción @unique del esquema es la que de verdad
+  // evita la carrera si las dos subidas llegan a la vez; aquí solo detectamos el caso limpio.
+  const matchFingerprint = computeMatchFingerprint(body.events);
 
-  return reply.code(201).send({ id: match.id });
+  const data = {
+    gameName: body.gameName ?? "Riftbound",
+    contributorId: typeof body.contributorId === "string" ? body.contributorId : null,
+    seriesId: typeof body.seriesId === "string" ? body.seriesId : null,
+    gameNumber: typeof body.gameNumber === "number" ? body.gameNumber : null,
+    startedAt: new Date(body.startedAt),
+    endedAt: body.endedAt ? new Date(body.endedAt) : null,
+    result,
+    turnCount: body.turnCount ?? null,
+    onThePlay: typeof body.onThePlay === "boolean" ? body.onThePlay : null,
+    localPlayerId: body.localPlayerId ?? null,
+    localPseudo: body.localPseudo ?? null,
+    opponentPlayerId: body.opponentPlayerId ?? null,
+    opponentPseudo: body.opponentPseudo ?? null,
+    localLegendId: body.localDeck?.legendId ?? null,
+    localLegendName: body.localDeck?.legendName ?? null,
+    opponentLegendId: body.opponentDeck?.legendId ?? null,
+    opponentLegendName: body.opponentDeck?.legendName ?? null,
+    season: typeof body.season === "string" ? body.season : null,
+    localDeck: body.localDeck ? JSON.stringify(body.localDeck) : null,
+    opponentDeck: body.opponentDeck ? JSON.stringify(body.opponentDeck) : null,
+    events: JSON.stringify(body.events ?? []),
+    matchFingerprint,
+  };
+
+  try {
+    const match = await prisma.match.create({ data });
+    return reply.code(201).send({ id: match.id });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002" && matchFingerprint) {
+      const existing = await prisma.match.findUnique({ where: { matchFingerprint } });
+      return reply.code(200).send({ id: existing?.id ?? null, duplicate: true });
+    }
+    throw err;
+  }
 });
 
 app.get("/matches", async (request, reply) => {

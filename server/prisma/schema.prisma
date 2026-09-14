@@ -52,6 +52,14 @@ model Match {
   opponentDeck String?
   events       String
 
+  // Huella de la partida real (hash del contenido de `events` que viene del propio motor del
+  // juego: id/playerId/timestamp de cada jugada — igual para los dos jugadores, a diferencia
+  // de `seriesId`/`startedAt` que cada instalación genera por su cuenta). Si los dos jugadores
+  // de una partida le dan a "Grabar", la segunda subida cae en la misma huella que la primera
+  // y no se duplica (ver `computeMatchFingerprint` en stats.ts). Null si `events` viene vacío
+  // (partida sin ninguna jugada registrada) o en partidas grabadas antes de esta función.
+  matchFingerprint String? @unique
+
   createdAt DateTime @default(now())
 
   @@index([localLegendName])
