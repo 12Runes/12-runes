@@ -138,7 +138,16 @@ app.post("/matches", async (request, reply) => {
     const match = await prisma.match.create({ data });
     return reply.code(201).send({ id: match.id });
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002" && matchFingerprint) {
+    // El motor nativo de Prisma envuelve esto en un `PrismaClientKnownRequestError` con
+    // code "P2002" de forma consistente, pero contra Turso (protocolo remoto, no el sqlite3
+    // local) el driver adapter deja pasar el error crudo del motor ("SQLITE_CONSTRAINT: ...
+    // UNIQUE constraint failed: Match.matchFingerprint") sin traducirlo — comprobado en vivo.
+    // Por eso se detecta por texto en vez de por tipo/código, cubriendo las dos formas.
+    const isFingerprintConflict =
+      matchFingerprint &&
+      ((err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") ||
+        /matchfingerprint/i.test(String((err as any)?.message ?? err)));
+    if (isFingerprintConflict) {
       const existing = await prisma.match.findUnique({ where: { matchFingerprint } });
       return reply.code(200).send({ id: existing?.id ?? null, duplicate: true });
     }
