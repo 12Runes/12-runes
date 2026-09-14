@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Match {
+  id     String @id @default(uuid())
+  gameName String @default("Riftbound")
+
+  startedAt DateTime
+  endedAt   DateTime?
+
+  result    String // WIN | LOSS | UNKNOWN
+
+  // Id anónimo generado y guardado por cada instalación de la extensión (no identifica a
+  // la persona). Permite separar "mis partidas" de las de todo el mundo una vez el backend
+  // sea compartido entre varias instalaciones. Null en partidas guardadas antes de esto.
+  contributorId String?
+
+  // Agrupa las partidas de un mismo Bo3 (misma conexión WebRTC entre los dos jugadores);
+  // gameNumber es el 1/2/3 dentro de esa serie. Null/1 en partidas sueltas o anteriores a esto.
+  seriesId   String?
+  gameNumber Int?
+
+  turnCount  Int?
+  onThePlay  Boolean? // true = empezó la partida, false = segundo, null = no se pudo determinar
+
+  localPlayerId    String?
+  localPseudo      String?
+  opponentPlayerId String?
+  opponentPseudo   String?
+
+  localLegendId       String?
+  localLegendName     String?
+  opponentLegendId    String?
+  opponentLegendName  String?
+
+  // Código de set/expansión activo cuando se jugó (p. ej. "VEN" = Vendetta), derivado de las
+  // banderas `_legal` que trae cada carta del mazo (ver extension/parser.js). Es una propiedad
+  // de la sala, igual para los dos lados. Null en partidas grabadas antes de esta función, o si
+  // el mazo capturado no traía esa información.
+  season String?
+
+  // SQLite no tiene tipo Json nativo en Prisma; se guardan como texto serializado
+  // (portable a Postgres más adelante, donde sí se podría pasar a Json real).
+  localDeck    String?
+  opponentDeck String?
+  events       String
+
+  createdAt DateTime @default(now())
+
+  @@index([localLegendName])
+  @@index([opponentLegendName])
+  @@index([result])
+  @@index([contributorId])
+  @@index([seriesId])
+  @@index([season])
+}

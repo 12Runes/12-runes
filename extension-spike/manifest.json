@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Riftbound Tracker — Spike (WebRTC sniffer)",
+  "version": "0.0.1",
+  "description": "Fase de investigación: captura los mensajes del canal de datos WebRTC en tcg-arena.fr para descubrir el formato de las acciones de partida de Riftbound. No sube nada a ningún servidor.",
+  "permissions": ["storage", "downloads"],
+  "content_scripts": [
+    {
+      "matches": ["https://tcg-arena.fr/*"],
+      "js": ["main-world-hook.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://tcg-arena.fr/*"],
+      "js": ["bridge.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Riftbound Tracker — Spike"
+  }
+}

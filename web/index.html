@@ -1,0 +1,1604 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>12 Runes</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --gridline: #e1e0d9;
+    --border: rgba(11, 11, 11, 0.10);
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --accent-2: #4a3aa7;
+    --good: #0ca30c;
+    --good-text: #006300;
+    --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --gridline: #2c2c2a;
+      --border: rgba(255, 255, 255, 0.10);
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --accent-2: #9085e9;
+      --good: #0ca30c;
+      --good-text: #0ca30c;
+      --critical: #e66767;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --border: rgba(255, 255, 255, 0.10);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --accent-2: #9085e9;
+    --good: #0ca30c;
+    --good-text: #0ca30c;
+    --critical: #e66767;
+  }
+
+  * { box-sizing: border-box; }
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+  }
+  main { max-width: min(1440px, 94vw); margin: 0 auto; padding: 32px clamp(16px, 3vw, 40px) 72px; }
+
+  .header-glow {
+    position: relative;
+  }
+  .header-glow::before {
+    content: ""; position: absolute; top: -80px; left: -10%; width: 70%; height: 260px;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--series-1) 20%, transparent), transparent 70%);
+    pointer-events: none; z-index: -1;
+  }
+
+  .brand { display: flex; align-items: center; gap: 18px; margin-bottom: 14px; }
+  .brand-mark {
+    position: relative; width: 68px; height: 68px; border-radius: 20px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -0.03em;
+    background: linear-gradient(150deg, var(--series-1) 0%, var(--accent-2) 100%);
+    box-shadow: 0 10px 28px -10px var(--series-1), inset 0 1px 0 rgba(255,255,255,0.25);
+    overflow: hidden;
+  }
+  .brand-mark::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), transparent 55%);
+  }
+  .brand-mark::after {
+    content: ""; position: absolute; width: 130%; height: 8px; bottom: 10px; left: -15%;
+    background: rgba(255,255,255,0.18); transform: rotate(-18deg); border-radius: 999px;
+  }
+  .brand-mark span { position: relative; }
+  h1 {
+    font-size: 26px; margin: 0; letter-spacing: -0.02em; font-weight: 800;
+    background: linear-gradient(100deg, var(--text-primary) 55%, var(--series-1));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .subtitle { color: var(--text-secondary); font-size: 13px; margin: 3px 0 0; }
+  .description { color: var(--text-secondary); font-size: 13px; line-height: 1.6; max-width: 720px; margin: 0 0 24px; }
+
+  .scope-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .scope-toggle { display: inline-flex; background: var(--surface-1); border: 1px solid var(--border); border-radius: 999px; padding: 3px; }
+  .scope-toggle button {
+    font: inherit; font-size: 12px; font-weight: 600; border: none; background: none; color: var(--text-secondary);
+    padding: 7px 16px; border-radius: 999px; cursor: pointer; transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  }
+  .scope-toggle button.active { background: linear-gradient(120deg, var(--series-1), var(--accent-2)); color: #fff; box-shadow: 0 4px 14px -6px var(--series-1); }
+  .scope-toggle button:not(.active):not(:disabled):hover { background: var(--gridline); color: var(--text-primary); }
+  .scope-toggle button:disabled { cursor: not-allowed; opacity: 0.4; }
+  #scope-hint { font-size: 12px; }
+
+  /* --- Navegación entre herramientas --- */
+  .main-nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 20px; }
+  .main-nav a {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 13px; font-weight: 600; padding: 8px 16px 8px 14px; border-radius: 999px; text-decoration: none;
+    color: var(--text-secondary); background: var(--surface-1); border: 1px solid var(--border);
+    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease, border-color 0.18s ease;
+  }
+  .main-nav a:hover { transform: translateY(-1px); border-color: var(--series-1); color: var(--text-primary); }
+  .main-nav a.active {
+    background: linear-gradient(120deg, var(--series-1), var(--accent-2)); color: #fff; border-color: transparent;
+    box-shadow: 0 4px 14px -6px var(--series-1);
+  }
+  .main-nav a:focus-visible, .home-card:focus-visible, .btn-primary:focus-visible, .btn-secondary:focus-visible {
+    outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--series-1) 35%, transparent);
+  }
+  .nav-icon { width: 15px; height: 15px; flex-shrink: 0; }
+  .nav-icon, .nav-icon * { stroke: currentColor; }
+
+  /* --- Menú de inicio --- */
+  .home-menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin: 8px 0 12px; }
+  .home-card {
+    position: relative; display: block; background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px 22px 48px; text-decoration: none; color: inherit; overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; animation: fadeInUp 0.35s ease both;
+  }
+  .home-card::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, var(--series-1), var(--accent-2));
+  }
+  .home-card:hover {
+    transform: translateY(-4px); box-shadow: 0 16px 32px -16px rgba(0,0,0,0.35);
+    border-color: color-mix(in srgb, var(--series-1) 40%, var(--border));
+  }
+  .home-card-icon {
+    width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--series-1) 16%, var(--surface-1)), color-mix(in srgb, var(--accent-2) 16%, var(--surface-1)));
+    border: 1px solid color-mix(in srgb, var(--series-1) 28%, var(--border));
+    color: var(--series-1); margin-bottom: 14px;
+    transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+  }
+  .home-card-icon svg { width: 24px; height: 24px; }
+  .home-card:hover .home-card-icon {
+    transform: scale(1.08) rotate(-4deg); color: #fff;
+    background: linear-gradient(135deg, var(--series-1), var(--accent-2));
+    box-shadow: 0 8px 18px -8px var(--series-1);
+  }
+  .home-card-title { font-size: 16px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .home-card-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+  .home-card-arrow {
+    position: absolute; bottom: 20px; right: 22px; font-size: 18px; color: var(--series-1); opacity: 0;
+    transform: translateX(-4px); transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .home-card:hover .home-card-arrow { opacity: 1; transform: translateX(0); }
+
+  .controls { display: flex; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  select {
+    font: inherit; font-size: 13px; padding: 9px 34px 9px 12px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface-1) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23898781' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+    color: var(--text-primary); min-width: 200px; appearance: none; cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  select:hover { border-color: var(--series-1); transform: translateY(-1px); }
+  select:focus-visible { outline: none; border-color: var(--series-1); box-shadow: 0 0 0 3px color-mix(in srgb, var(--series-1) 25%, transparent); }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .tile {
+    position: relative; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 18px; overflow: hidden; animation: fadeInUp 0.35s ease both;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+  .tile::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--series-1), var(--accent-2)); opacity: 0; transition: opacity 0.18s ease;
+  }
+  .tile:hover { transform: translateY(-3px); box-shadow: 0 12px 28px -12px rgba(0,0,0,0.3); border-color: color-mix(in srgb, var(--series-1) 35%, var(--border)); }
+  .tile:hover::before { opacity: 1; }
+  .tile .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .tile .value { font-size: 27px; font-weight: 700; letter-spacing: -0.01em; }
+  .tile .sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  section { margin-bottom: 36px; animation: fadeIn 0.4s ease both; }
+  h2 { font-size: 16px; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: -0.01em; }
+  .count-pill { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+
+  .table-scroll { overflow-x: auto; border-radius: 14px; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; min-width: 480px; border-collapse: collapse; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; animation: fadeIn 0.3s ease both; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--gridline); font-variant-numeric: tabular-nums; }
+  th { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600; cursor: pointer; user-select: none; white-space: nowrap; transition: color 0.15s ease; }
+  th:hover { color: var(--series-1); }
+  tbody tr { transition: background 0.12s ease; }
+  tbody tr:hover { background: color-mix(in srgb, var(--series-1) 7%, transparent); }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num, th.num { text-align: right; }
+  .muted { color: var(--text-muted); }
+
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: 11px; padding: 3px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .badge.win { color: var(--good-text); background: color-mix(in srgb, var(--good) 14%, transparent); }
+  .badge.loss { color: var(--critical); background: color-mix(in srgb, var(--critical) 14%, transparent); }
+  .badge.unknown { color: var(--text-muted); background: var(--gridline); }
+
+  .delta-pos { color: var(--good-text); }
+  .delta-neg { color: var(--critical); }
+
+  .empty { color: var(--text-muted); padding: 20px; text-align: center; }
+  .table-legend { font-size: 12px; color: var(--text-muted); margin: 8px 4px 0; line-height: 1.5; }
+  .table-legend strong { color: var(--text-secondary); }
+
+  .card-name-cell { cursor: default; }
+  .card-name-cell:hover { text-decoration: underline dotted; text-decoration-color: var(--text-muted); }
+
+  /* --- Vista de decklist --- */
+  .deck-header { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+  .deck-lead {
+    display: flex; align-items: center; gap: 10px; background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 14px; transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .deck-lead:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -8px rgba(0,0,0,0.25); }
+  .deck-lead img { width: 42px; height: 58px; object-fit: cover; border-radius: 6px; }
+  .deck-lead .name { font-weight: 600; font-size: 13px; }
+  .deck-lead .role { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+
+  .deck-category { margin-bottom: 18px; }
+  .deck-category h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin: 0 0 8px; }
+
+  .deck-variants { margin-bottom: 18px; }
+  .deck-variants h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin: 0 0 8px; }
+  .variant-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .variant-chip {
+    font-size: 12px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-secondary); cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+  .variant-chip:hover { transform: translateY(-1px); box-shadow: 0 6px 16px -8px rgba(0,0,0,0.3); }
+  .variant-chip.active { background: linear-gradient(120deg, var(--series-1), var(--accent-2)); color: #fff; border-color: transparent; }
+  .card-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .card-cell {
+    position: relative; width: 82px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: default;
+  }
+  .card-cell .thumb {
+    width: 82px; height: 114px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border);
+    background: var(--gridline); transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .card-cell:hover .thumb { transform: translateY(-3px) scale(1.03); box-shadow: 0 10px 18px -8px rgba(0,0,0,0.35); }
+  .card-cell .thumb.placeholder { display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-muted); text-align: center; padding: 4px; }
+  .card-cell .count { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.65); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 999px; }
+  .card-cell .cname { font-size: 10px; text-align: center; color: var(--text-secondary); line-height: 1.2; }
+
+  /* --- Tooltip flotante de imagen al pasar el ratón --- */
+  #card-preview {
+    position: fixed; z-index: 1000; pointer-events: none; opacity: 0; transform: scale(0.97);
+    transition: opacity 0.1s ease, transform 0.1s ease;
+    border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,0.35); overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  #card-preview.visible { opacity: 1; transform: scale(1); }
+  #card-preview img { display: block; width: 220px; height: auto; }
+
+  .btn-primary {
+    font: inherit; font-size: 13px; font-weight: 700; padding: 10px 18px; border-radius: 10px; border: none;
+    background: linear-gradient(120deg, var(--series-1), var(--accent-2)); background-size: 140% 140%; background-position: 0% 50%;
+    color: #fff; cursor: pointer; margin: 4px 0 18px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease, background-position 0.35s ease;
+  }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 24px -10px var(--series-1); background-position: 100% 50%; }
+  .btn-primary:active:not(:disabled) { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn-secondary {
+    font: inherit; font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+  .btn-secondary:hover:not(:disabled) { transform: translateY(-1px); border-color: var(--series-1); color: var(--text-primary); box-shadow: 0 6px 16px -10px rgba(0,0,0,0.3); }
+  .btn-secondary.active { background: linear-gradient(120deg, var(--series-1), var(--accent-2)); color: #fff; border-color: transparent; }
+
+  /* --- Simulador de mulligans --- */
+  .mulligan-hand { display: flex; flex-wrap: wrap; gap: 18px; }
+  .mulligan-card { width: 128px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .mulligan-card .thumb {
+    width: 128px; height: 178px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border);
+    background: var(--gridline); transition: filter 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .mulligan-card:hover .thumb { transform: translateY(-3px); box-shadow: 0 10px 20px -8px rgba(0,0,0,0.4); }
+  .mulligan-card .thumb.placeholder { display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-muted); text-align: center; padding: 6px; }
+  .mulligan-card.mull-out .thumb { filter: grayscale(1) brightness(0.7); }
+  .mulligan-card .cname { font-size: 11px; text-align: center; color: var(--text-secondary); line-height: 1.25; }
+  .mulligan-card .mull-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+  .mulligan-card.mull-out .mull-tag { color: var(--critical); }
+  .mulligan-card.mull-keep .mull-tag { color: var(--good-text); }
+
+  #mull-tooltip {
+    position: fixed; z-index: 1001; pointer-events: none; opacity: 0; transform: translateY(4px);
+    transition: opacity 0.1s ease, transform 0.1s ease; max-width: 260px; font-size: 12px; line-height: 1.45;
+    background: var(--text-primary); color: var(--page); padding: 9px 11px; border-radius: 8px;
+    box-shadow: 0 10px 26px rgba(0,0,0,0.3);
+  }
+  #mull-tooltip.visible { opacity: 1; transform: translateY(0); }
+
+  /* --- Valoración de cartas (estilo 17lands) --- */
+  .set-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .grade-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 14px; }
+  .grade-grid {
+    display: grid; grid-template-columns: 60px repeat(var(--domain-count, 8), minmax(148px, 1fr));
+    min-width: 1240px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    background: var(--surface-1); animation: fadeIn 0.3s ease both;
+  }
+  .grade-head {
+    padding: 10px 8px; text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.03em; color: var(--text-secondary); background: var(--gridline);
+    border-bottom: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .grade-head .domain-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .grade-row-label {
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px;
+    border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--page);
+  }
+  .grade-row-label.tier-good { color: var(--good-text); }
+  .grade-row-label.tier-mid { color: var(--text-secondary); }
+  .grade-row-label.tier-bad { color: var(--critical); }
+  .grade-cell {
+    border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 6px;
+    display: flex; flex-direction: column; gap: 6px; min-height: 40px;
+  }
+  .grade-card {
+    display: flex; align-items: center; gap: 7px; background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px 8px 4px 4px; cursor: default; animation: fadeInUp 0.25s ease both;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .grade-card:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 18px -10px rgba(0,0,0,0.4); border-color: color-mix(in srgb, var(--series-1) 45%, var(--border)); z-index: 1; }
+  .grade-card .thumb { width: 28px; height: 39px; border-radius: 4px; object-fit: cover; flex-shrink: 0; background: var(--gridline); }
+  .grade-card .name { font-size: 10.5px; font-weight: 600; line-height: 1.2; flex: 1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .grade-card .pct { font-size: 11px; font-weight: 800; white-space: nowrap; }
+  .grade-card .pct.tier-good { color: var(--good-text); }
+  .grade-card .pct.tier-mid { color: var(--text-secondary); }
+  .grade-card .pct.tier-bad { color: var(--critical); }
+
+  /* --- Matriz de matchups --- */
+  .matrix-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 14px; }
+  .matrix-grid {
+    display: grid; grid-template-columns: 150px 108px repeat(var(--legend-count, 6), 108px);
+    border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--surface-1);
+    animation: fadeIn 0.3s ease both; min-width: max-content;
+  }
+  .matrix-head {
+    padding: 10px 6px; text-align: center; background: var(--gridline); border-bottom: 1px solid var(--border);
+    border-left: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 5px;
+  }
+  .matrix-head img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
+  .matrix-head .name { font-size: 10.5px; font-weight: 700; line-height: 1.2; }
+  .matrix-row-head {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border);
+    background: var(--page);
+  }
+  .matrix-row-head img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid var(--border); }
+  .matrix-row-head .name { font-size: 11.5px; font-weight: 700; line-height: 1.25; }
+  .matrix-cell {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    padding: 6px 4px; border-bottom: 1px solid var(--border); border-left: 1px solid var(--border);
+    color: #fff; min-height: 58px; transition: transform 0.15s ease; cursor: default;
+  }
+  .matrix-cell:hover { transform: scale(1.04); z-index: 1; box-shadow: 0 6px 16px -6px rgba(0,0,0,0.5); }
+  .matrix-cell .range { font-size: 9px; opacity: 0.85; font-variant-numeric: tabular-nums; }
+  .matrix-cell .pct { font-size: 15px; font-weight: 800; }
+  .matrix-cell .n { font-size: 9px; opacity: 0.8; }
+  .matrix-cell.overall { font-weight: 800; background: var(--gridline) !important; color: var(--text-primary); }
+  .matrix-cell.empty { color: var(--text-muted); background: var(--page) !important; font-size: 13px; }
+
+  /* --- Responsive --- */
+  @media (max-width: 760px) {
+    main { padding: 22px 16px 56px; }
+    .brand { gap: 14px; }
+    .brand-mark { width: 54px; height: 54px; border-radius: 16px; font-size: 20px; }
+    h1 { font-size: 21px; }
+    .controls { flex-direction: column; align-items: stretch; }
+    .field { width: 100%; }
+    select { min-width: 0; width: 100%; }
+    .tiles { grid-template-columns: repeat(2, 1fr); }
+    .mulligan-hand { justify-content: center; }
+    .deck-header { justify-content: center; }
+  }
+  @media (max-width: 420px) {
+    .tiles { grid-template-columns: 1fr; }
+    .brand { gap: 12px; }
+    .brand-mark { width: 48px; height: 48px; border-radius: 14px; font-size: 18px; }
+    h1 { font-size: 18px; }
+    .description { font-size: 12.5px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand header-glow">
+    <div class="brand-mark"><span>12</span></div>
+    <div>
+      <h1>12 Runes</h1>
+      <p class="subtitle">Estadísticas de Riftbound a partir de tus partidas en tcg-arena.fr</p>
+    </div>
+  </div>
+  <p class="description">
+    12 Runes graba en segundo plano las partidas de Riftbound que juegas en tcg-arena.fr (con tu permiso en
+    cada una) y las convierte en estadísticas: qué Legends te funcionan mejor, cómo cambia tu win rate según
+    si vas on the play o on the draw, qué cartas concretas están asociadas a más victorias en cada matchup,
+    y el desglose lista a lista cuando pruebas builds distintas con la misma Legend. Cada partida grabada
+    cuenta el doble: el log de la conexión trae completa la identidad de cada carta que se juega, tanto
+    las tuyas como las del rival, así que todas las estadísticas se calculan también desde su lado — por
+    eso pueden aparecer Legends que nunca has jugado tú, pero sí has enfrentado.
+  </p>
+
+  <nav class="main-nav" id="main-nav">
+    <a href="#home" class="nav-link" data-view="home">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+      Inicio
+    </a>
+    <a href="#tracker" class="nav-link" data-view="tracker">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-6"/></svg>
+      Rendimiento y win rate
+    </a>
+    <a href="#mulligan" class="nav-link" data-view="mulligan">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
+      Simulador de mulligans
+    </a>
+    <a href="#cards" class="nav-link" data-view="cards">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.1 5.8 20.8l1.6-6.8-5.2-4.6 6.9-.6L12 2.5z"/></svg>
+      Valoración de cartas
+    </a>
+    <a href="#matrix" class="nav-link" data-view="matrix">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Matriz de matchups
+    </a>
+  </nav>
+
+  <div class="scope-row">
+    <div class="scope-toggle" id="scope-toggle">
+      <button data-scope="mine" class="active">Mis partidas</button>
+      <button data-scope="all">Comunidad</button>
+    </div>
+    <span class="muted" id="scope-hint"></span>
+  </div>
+
+  <div class="view" data-view="home" id="view-home">
+    <div class="home-menu">
+      <a class="home-card" href="#tracker">
+        <div class="home-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-6"/></svg>
+        </div>
+        <div class="home-card-title">Rendimiento y win rate</div>
+        <div class="home-card-desc">
+          Estadísticas por Legend, rendimiento de cada carta jugada, matchups y tus partidas recientes —
+          la vista completa de cómo te está yendo.
+        </div>
+        <span class="home-card-arrow">&rarr;</span>
+      </a>
+      <a class="home-card" href="#mulligan">
+        <div class="home-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
+        </div>
+        <div class="home-card-title">Simulador de mulligans</div>
+        <div class="home-card-desc">
+          Genera una mano de apertura al azar con tu arquetipo y te sugiere qué cartas cambiar en el
+          mulligan — y por qué.
+        </div>
+        <span class="home-card-arrow">&rarr;</span>
+      </a>
+      <a class="home-card" href="#cards">
+        <div class="home-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.1 5.8 20.8l1.6-6.8-5.2-4.6 6.9-.6L12 2.5z"/></svg>
+        </div>
+        <div class="home-card-title">Valoración de cartas</div>
+        <div class="home-card-desc">
+          Todas tus cartas puntuadas por win rate, agrupadas por dominio de runa y por set — al estilo de
+          las tablas de 17lands.com.
+        </div>
+        <span class="home-card-arrow">&rarr;</span>
+      </a>
+      <a class="home-card" href="#matrix">
+        <div class="home-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </div>
+        <div class="home-card-title">Matriz de matchups</div>
+        <div class="home-card-desc">
+          Win rate de cada Legend contra cada una de las demás, coloreado de rojo a verde y con
+          intervalo de confianza — filtrable por season.
+        </div>
+        <span class="home-card-arrow">&rarr;</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="view" data-view="tracker" id="view-tracker-top">
+    <div class="controls">
+      <div class="field">
+        <label for="legend-select">Tu Legend</label>
+        <select id="legend-select"></select>
+      </div>
+      <div class="field">
+        <label for="deck-select">Arquetipo</label>
+        <select id="deck-select">
+          <option value="">Todos los arquetipos</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="opponent-select">Rival</label>
+        <select id="opponent-select">
+          <option value="">Todos los rivales</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="tiles" id="tiles"></div>
+
+    <section id="decklist-section" hidden>
+      <h2>Lista de mazo</h2>
+      <p class="table-legend">
+        Un arquetipo agrupa listas casi idénticas (hasta 6 cartas de diferencia, mismo Chosen
+        Champion) para no llenar el desplegable con una entrada por cada ajuste puntual. Si hay
+        más de una variante jugada, puedes elegir cuál ver abajo.
+      </p>
+      <div id="decklist-view"></div>
+    </section>
+
+    <section>
+      <h2>Rendimiento por carta jugada</h2>
+      <div id="cards-table" class="table-scroll"></div>
+      <p class="table-legend">
+        <strong>Δ</strong> = tu win rate en las partidas donde jugaste esa carta, menos tu win rate en las
+        partidas donde no la jugaste. +20% significa que ganas un 20% más a menudo cuando la juegas; -20%
+        que jugarla se asocia a más derrotas. Con pocas partidas el número puede salir en 0% o dar saltos
+        grandes aunque la carta sí importe — hace falta más muestra para que sea fiable.
+      </p>
+    </section>
+  </div>
+
+  <section class="view" data-view="mulligan">
+    <h2>Simulador de mulligans</h2>
+    <p class="table-legend">
+      Genera una mano de apertura de 4 cartas al azar con tu arquetipo y te sugiere qué cartas (0, 1 o 2 —
+      el máximo que deja cambiar el mulligan real) tiene más sentido devolver: por su win rate en concreto
+      en este matchup yendo on the play/on the draw, por si su coste la deja varios turnos sin poder
+      jugarse frente a las runas que tendrás al empezar, o por si ya tienes otra copia en la mano. Se basa
+      en las partidas grabadas hasta ahora — con poca muestra acierta menos, no es una respuesta exacta.
+    </p>
+    <div class="controls">
+      <div class="field">
+        <label for="mull-legend-select">Tu Legend</label>
+        <select id="mull-legend-select"></select>
+      </div>
+      <div class="field">
+        <label for="mull-deck-select">Arquetipo</label>
+        <select id="mull-deck-select"></select>
+      </div>
+      <div class="field">
+        <label for="mull-opponent-select">Rival</label>
+        <select id="mull-opponent-select">
+          <option value="">Todos los rivales</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="mull-side-select">Turno</label>
+        <select id="mull-side-select">
+          <option value="play">On the play (empiezas)</option>
+          <option value="draw">On the draw (vas segundo)</option>
+        </select>
+      </div>
+    </div>
+    <button id="mull-generate" class="btn-primary" disabled>Generar mano aleatoria</button>
+    <div id="mulligan-hand"></div>
+  </section>
+
+  <section class="view" data-view="cards">
+    <h2>Valoración de cartas <span class="count-pill">(sin Runes)</span></h2>
+    <p class="table-legend">
+      Cada carta jugada, agrupada por dominio de runa y puntuada con una nota (A+ a F) según tu win rate
+      cuando la juegas — al estilo de las tablas de 17lands.com para Magic. Dividido por set porque una
+      carta puede rendir distinto según el resto del formato disponible en cada uno. Pasa el ratón por
+      encima de una carta para ver en cuántas partidas se basa la nota — con pocas, puede moverse mucho de
+      una partida a la siguiente.
+    </p>
+    <div class="controls">
+      <div class="field">
+        <label for="grade-legend-select">Legend</label>
+        <select id="grade-legend-select"></select>
+      </div>
+    </div>
+    <div class="set-tabs" id="grade-set-tabs"></div>
+    <div id="card-grades-grid"></div>
+  </section>
+
+  <section class="view" data-view="matrix">
+    <h2>Matriz de matchups</h2>
+    <p class="table-legend">
+      Cada celda es el win rate de la Legend de esa fila cuando se ha enfrentado a la de esa columna:
+      verde para los matchups que te van bien, rojo para los que te van mal. La columna
+      <strong>OVERALL</strong> resume el win rate total de esa Legend, contra cualquier rival. Cambia de
+      season con los botones de abajo.
+    </p>
+    <div class="set-tabs" id="matrix-season-tabs"></div>
+    <div id="matchup-matrix-grid"></div>
+  </section>
+
+  <div class="view" data-view="tracker">
+    <section>
+      <h2>Matchups</h2>
+      <div id="matchups-table" class="table-scroll"></div>
+    </section>
+
+    <section>
+      <h2>Partidas recientes</h2>
+      <div id="matches-table" class="table-scroll"></div>
+    </section>
+  </div>
+</main>
+
+<div id="card-preview"><img id="card-preview-img" alt="" /></div>
+<div id="mull-tooltip"></div>
+
+<script>
+const API = location.origin;
+const pct = (v) => (v == null ? "—" : `${(v * 100).toFixed(0)}%`);
+const fmtDelta = (v) => (v == null ? "—" : `${v >= 0 ? "+" : ""}${(v * 100).toFixed(0)}%`);
+const fmtDate = (s) => new Date(s).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+
+let allLegends = [];
+let allMatchups = [];
+let allDecksForLegend = [];
+let mullClusters = [];
+let sortState = { key: "gamesPlayed", dir: -1 };
+
+// El link "Ver panel de estadísticas" del popup de la extensión abre esta página con
+// ?me=<contributorId>. Lo guardamos en localStorage para no perderlo en visitas futuras.
+const urlParams = new URLSearchParams(location.search);
+let myContributorId = urlParams.get("me") || localStorage.getItem("rbt_me") || null;
+if (urlParams.get("me")) {
+  localStorage.setItem("rbt_me", urlParams.get("me"));
+  urlParams.delete("me");
+  const rest = urlParams.toString();
+  history.replaceState({}, "", location.pathname + (rest ? `?${rest}` : ""));
+}
+let scope = myContributorId ? "mine" : "all";
+
+// --- Navegación entre herramientas (Inicio / Rendimiento / Mulligans / Cartas) -------------
+// Cada "vista" ya carga sus datos igual (reloadAll/initMulliganSection/loadCardGrades corren
+// siempre, esté visible o no), así que cambiar de vista es instantáneo: solo enseña/oculta.
+const VIEWS = ["home", "tracker", "mulligan", "cards", "matrix"];
+
+function currentView() {
+  const h = location.hash.replace("#", "");
+  return VIEWS.includes(h) ? h : "home";
+}
+
+function showView(view) {
+  document.querySelectorAll(".view").forEach((el) => {
+    el.hidden = el.dataset.view !== view;
+  });
+  document.querySelectorAll(".nav-link").forEach((a) => {
+    a.classList.toggle("active", a.dataset.view === view);
+  });
+  window.scrollTo(0, 0);
+}
+
+window.addEventListener("hashchange", () => showView(currentView()));
+
+// "Mis partidas" filtra por tu contributorId; "Comunidad" agrega las de todo el backend
+// (nunca incluye pseudos, solo Legend/carta/mazo — ver README).
+function scopedParams(obj = {}) {
+  const qs = new URLSearchParams(obj);
+  if (scope === "mine" && myContributorId) qs.set("contributor", myContributorId);
+  return qs;
+}
+
+async function getJSON(path) {
+  const res = await fetch(API + path);
+  if (!res.ok) throw new Error(`${path} -> HTTP ${res.status}`);
+  return res.json();
+}
+
+function el(tag, attrs = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "text") node.textContent = v;
+    else if (k === "html") node.innerHTML = v;
+    else node.setAttribute(k, v);
+  }
+  for (const c of [].concat(children)) if (c) node.appendChild(c);
+  return node;
+}
+
+// --- Tooltip de imagen al hacer hover sobre una carta -------------------------------------
+// Un único listener delegado en document, en vez de mouseenter/mouseleave por celda: al
+// pasar rápido de una fila a la siguiente en una tabla, el emparejamiento enter/leave por
+// elemento puede fallar y dejar la imagen "pegada" a la carta anterior. Recalculando en cada
+// mousemove a partir de qué hay bajo el cursor, cada movimiento se autocorrige solo.
+const preview = document.getElementById("card-preview");
+const previewImg = document.getElementById("card-preview-img");
+let currentPreviewUrl = null;
+
+function markCardHover(node, imageUrl) {
+  if (!imageUrl) return;
+  node.classList.add("card-name-cell");
+  node.dataset.cardImage = imageUrl;
+}
+
+document.addEventListener("mousemove", (e) => {
+  const target = e.target.closest("[data-card-image]");
+  const url = target ? target.dataset.cardImage : null;
+
+  if (!url) {
+    if (currentPreviewUrl !== null) {
+      currentPreviewUrl = null;
+      preview.classList.remove("visible");
+    }
+    return;
+  }
+
+  if (url !== currentPreviewUrl) {
+    currentPreviewUrl = url;
+    previewImg.src = url;
+    preview.classList.add("visible");
+  }
+
+  const margin = 16;
+  let x = e.clientX + margin;
+  let y = e.clientY + margin;
+  if (x + 230 > window.innerWidth) x = e.clientX - 230 - margin;
+  if (y + 320 > window.innerHeight) y = Math.max(8, window.innerHeight - 320 - margin);
+  preview.style.left = `${x}px`;
+  preview.style.top = `${y}px`;
+});
+
+// --- Tooltip de texto al pasar el ratón (por qué cambiar/quedarte una carta del mulligan) --
+// Mismo patrón delegado que el de la imagen de arriba, con su propio atributo (`data-reason`)
+// para que ambos convivan sin pisarse: una carta puede llevar los dos a la vez.
+const mullTooltip = document.getElementById("mull-tooltip");
+let currentMullReason = null;
+
+document.addEventListener("mousemove", (e) => {
+  const target = e.target.closest("[data-reason]");
+  const reason = target ? target.dataset.reason : null;
+
+  if (!reason) {
+    if (currentMullReason !== null) {
+      currentMullReason = null;
+      mullTooltip.classList.remove("visible");
+    }
+    return;
+  }
+
+  if (reason !== currentMullReason) {
+    currentMullReason = reason;
+    mullTooltip.textContent = reason;
+    mullTooltip.classList.add("visible");
+  }
+
+  const margin = 14;
+  const w = 260;
+  const h = 90;
+  let x = e.clientX + margin;
+  let y = e.clientY + margin;
+  if (x + w > window.innerWidth) x = e.clientX - w - margin;
+  if (y + h > window.innerHeight) y = Math.max(8, window.innerHeight - h - margin);
+  mullTooltip.style.left = `${x}px`;
+  mullTooltip.style.top = `${y}px`;
+});
+
+function renderTiles(matchup) {
+  const tiles = document.getElementById("tiles");
+  tiles.innerHTML = "";
+  const items = [
+    { label: "Partidas", value: matchup.games, sub: `${matchup.wins}V - ${matchup.losses}D` },
+    { label: "Win rate", value: pct(matchup.winRate) },
+    { label: "On the play", value: pct(matchup.onPlay.winRate), sub: `${matchup.onPlay.games} partidas` },
+    { label: "On the draw", value: pct(matchup.onDraw.winRate), sub: `${matchup.onDraw.games} partidas` },
+  ];
+  for (const item of items) {
+    tiles.appendChild(
+      el("div", { class: "tile" }, [
+        el("div", { class: "label", text: item.label }),
+        el("div", { class: "value", text: item.value }),
+        item.sub ? el("div", { class: "sub", text: item.sub }) : null,
+      ])
+    );
+  }
+}
+
+function resultBadge(result) {
+  const map = { WIN: ["win", "Victoria"], LOSS: ["loss", "Derrota"], UNKNOWN: ["unknown", "?"] };
+  const [cls, label] = map[result] ?? ["unknown", result];
+  return el("span", { class: `badge ${cls}`, text: label });
+}
+
+const CARD_COLUMNS = [
+  { key: "cardName", label: "Carta" },
+  { key: "cardType", label: "Tipo" },
+  { key: "gamesPlayed", label: "Partidas", num: true },
+  { key: "winRateWhenPlayed", label: "WR jugada", num: true, fmt: pct },
+  {
+    key: "delta",
+    label: "Δ",
+    num: true,
+    fmt: fmtDelta,
+    delta: true,
+    title: "Diferencia en puntos porcentuales entre el win rate de las partidas donde jugaste esta carta y el win rate de las partidas donde no la jugaste. +pp = jugarla se asocia a más victorias; -pp = a menos. Con pocas partidas puede dar 0pp o ir a saltos aunque la carta sí importe — hace falta más muestra para que el número sea fiable.",
+  },
+  { key: "onPlayWinRate", label: "WR on play", num: true, fmt: pct },
+  { key: "onDrawWinRate", label: "WR on draw", num: true, fmt: pct },
+];
+
+function renderCardsTable(cards) {
+  const container = document.getElementById("cards-table");
+  container.innerHTML = "";
+  if (cards.length === 0) {
+    container.appendChild(el("div", { class: "empty", text: "Todavía no hay cartas jugadas registradas para este filtro." }));
+    return;
+  }
+
+  const rows = cards.map((c) => ({
+    ...c,
+    onPlayWinRate: c.onPlay.winRate,
+    onDrawWinRate: c.onDraw.winRate,
+  }));
+
+  rows.sort((a, b) => {
+    const av = a[sortState.key], bv = b[sortState.key];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    if (typeof av === "string") return sortState.dir * av.localeCompare(bv);
+    return sortState.dir * (av - bv);
+  });
+
+  const table = el("table");
+  const thead = el("tr");
+  for (const col of CARD_COLUMNS) {
+    const th = el("th", { class: col.num ? "num" : "" });
+    if (col.title) th.title = col.title;
+    th.textContent = col.label + (sortState.key === col.key ? (sortState.dir === 1 ? " ▲" : " ▼") : "");
+    th.addEventListener("click", () => {
+      if (sortState.key === col.key) sortState.dir *= -1;
+      else sortState = { key: col.key, dir: -1 };
+      renderCardsTable(cards);
+    });
+    thead.appendChild(th);
+  }
+  table.appendChild(el("thead", {}, thead));
+
+  const tbody = el("tbody");
+  for (const row of rows) {
+    const tr = el("tr");
+    for (const col of CARD_COLUMNS) {
+      const raw = row[col.key];
+      const text = col.fmt ? col.fmt(raw) : raw ?? "—";
+      const td = el("td", { class: col.num ? "num" : "" });
+      if (col.delta && raw != null) td.className += raw >= 0 ? " delta-pos" : " delta-neg";
+      td.textContent = text;
+      if (col.key === "cardName") markCardHover(td, row.cardImage);
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+
+function renderMatchupsTable(matchups) {
+  const container = document.getElementById("matchups-table");
+  container.innerHTML = "";
+  if (matchups.length === 0) {
+    container.appendChild(el("div", { class: "empty", text: "Sin datos todavía." }));
+    return;
+  }
+  const table = el("table");
+  table.appendChild(
+    el("thead", {}, el("tr", {}, [
+      el("th", { text: "Tu Legend" }),
+      el("th", { text: "Legend rival" }),
+      el("th", { class: "num", text: "Partidas" }),
+      el("th", { class: "num", text: "Win rate" }),
+    ]))
+  );
+  const tbody = el("tbody");
+  for (const m of matchups) {
+    tbody.appendChild(
+      el("tr", {}, [
+        el("td", { text: m.localLegend }),
+        el("td", { text: m.opponentLegend }),
+        el("td", { class: "num", text: m.games }),
+        el("td", { class: "num", text: pct(m.winRate) }),
+      ])
+    );
+  }
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+
+function renderMatchesTable(matches) {
+  const container = document.getElementById("matches-table");
+  container.innerHTML = "";
+  if (matches.length === 0) {
+    container.appendChild(el("div", { class: "empty", text: "Sin partidas guardadas." }));
+    return;
+  }
+  const table = el("table");
+  table.appendChild(
+    el("thead", {}, el("tr", {}, [
+      el("th", { text: "Fecha" }),
+      el("th", { text: "Resultado" }),
+      el("th", { text: "Rival" }),
+      el("th", { text: "Tu Legend" }),
+      el("th", { text: "Legend rival" }),
+      el("th", { class: "num", text: "Turnos" }),
+      el("th", { text: "Play/Draw" }),
+    ]))
+  );
+  const tbody = el("tbody");
+  for (const m of matches) {
+    tbody.appendChild(
+      el("tr", {}, [
+        el("td", { text: fmtDate(m.startedAt) }),
+        el("td", {}, resultBadge(m.result)),
+        el("td", { text: m.opponentPseudo ?? "—" }),
+        el("td", { text: m.localLegendName ?? "—" }),
+        el("td", { text: m.opponentLegendName ?? "—" }),
+        el("td", { class: "num", text: m.turnCount ?? "—" }),
+        el("td", { class: "muted", text: m.onThePlay == null ? "—" : m.onThePlay ? "Play" : "Draw" }),
+      ])
+    );
+  }
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+
+function cardCell(card) {
+  const cell = el("div", { class: "card-cell" });
+  const thumb = card.image
+    ? el("img", { class: "thumb", src: card.image, alt: card.name ?? "" })
+    : el("div", { class: "thumb placeholder", text: card.name ?? "?" });
+  cell.appendChild(thumb);
+  if (card.count > 1) cell.appendChild(el("div", { class: "count", text: `×${card.count}` }));
+  cell.appendChild(el("div", { class: "cname", text: card.name ?? card.id }));
+  markCardHover(cell, card.image);
+  return cell;
+}
+
+function deckCategory(title, cards) {
+  if (!cards || cards.length === 0) return null;
+  const grid = el("div", { class: "card-grid" });
+  for (const c of cards) grid.appendChild(cardCell(c));
+  return el("div", { class: "deck-category" }, [el("h3", { text: `${title} (${cards.reduce((s, c) => s + (c.count ?? 1), 0)})` }), grid]);
+}
+
+function renderDeckList(cluster) {
+  const section = document.getElementById("decklist-section");
+  if (!cluster) {
+    section.hidden = true;
+    document.getElementById("decklist-view").innerHTML = "";
+    return;
+  }
+  section.hidden = false;
+  renderDeckVariant(cluster, cluster.variants[0]);
+}
+
+function renderDeckVariant(cluster, variant) {
+  const container = document.getElementById("decklist-view");
+  container.innerHTML = "";
+  const deck = variant.deck;
+
+  if (cluster.variantCount > 1) {
+    const box = el("div", { class: "deck-variants" });
+    box.appendChild(
+      el("h3", { text: `Variantes de esta build (${cluster.variantCount}) — difieren en pocas cartas` })
+    );
+    const chips = el("div", { class: "variant-chips" });
+    for (const v of cluster.variants) {
+      const chip = el("button", {
+        class: "variant-chip" + (v.signature === variant.signature ? " active" : ""),
+        text: `${v.games} partidas (${pct(v.winRate)})`,
+      });
+      chip.addEventListener("click", () => renderDeckVariant(cluster, v));
+      chips.appendChild(chip);
+    }
+    box.appendChild(chips);
+    container.appendChild(box);
+  }
+
+  const header = el("div", { class: "deck-header" });
+  if (deck.legendImage || deck.legendName) {
+    const lead = el("div", { class: "deck-lead" }, [
+      deck.legendImage ? el("img", { src: deck.legendImage, alt: "" }) : null,
+      el("div", {}, [el("div", { class: "role", text: "Legend" }), el("div", { class: "name", text: deck.legendName ?? "—" })]),
+    ]);
+    markCardHover(lead, deck.legendImage);
+    header.appendChild(lead);
+  }
+  if (deck.championImage || deck.championName) {
+    const lead = el("div", { class: "deck-lead" }, [
+      deck.championImage ? el("img", { src: deck.championImage, alt: "" }) : null,
+      el("div", {}, [el("div", { class: "role", text: "Chosen Champion" }), el("div", { class: "name", text: deck.championName ?? "—" })]),
+    ]);
+    markCardHover(lead, deck.championImage);
+    header.appendChild(lead);
+  }
+  container.appendChild(header);
+
+  for (const [title, cards] of [
+    ["Battlefields", deck.battlefields],
+    ["Runes", deck.runes],
+    ["Spells", deck.spells],
+    ["Units", deck.units],
+    ["Sideboard", deck.sideboard],
+  ]) {
+    const node = deckCategory(title, cards);
+    if (node) container.appendChild(node);
+  }
+}
+
+async function loadForSelection() {
+  const legend = document.getElementById("legend-select").value;
+  const opponent = document.getElementById("opponent-select").value;
+  const deckSig = document.getElementById("deck-select").value;
+  if (!legend) return;
+
+  const qs = scopedParams({ legend });
+  if (opponent) qs.set("opponent", opponent);
+  if (deckSig) qs.set("deck", deckSig);
+  const data = await getJSON(`/stats/cards?${qs}`);
+  renderTiles(data.matchup);
+  renderCardsTable(data.cards);
+
+  renderMatchupsTable(allMatchups.filter((m) => m.localLegend === legend));
+
+  const cluster = deckSig ? allDecksForLegend.find((d) => d.clusterId === deckSig) : null;
+  renderDeckList(cluster);
+}
+
+function populateOpponentOptions(legend) {
+  const select = document.getElementById("opponent-select");
+  select.innerHTML = '<option value="">Todos los rivales</option>';
+  const opponents = allMatchups
+    .filter((m) => m.localLegend === legend)
+    .sort((a, b) => b.games - a.games);
+  for (const m of opponents) {
+    select.appendChild(el("option", { value: m.opponentLegend, text: `${m.opponentLegend} (${m.games})` }));
+  }
+}
+
+async function populateDeckOptions(legend) {
+  const select = document.getElementById("deck-select");
+  select.innerHTML = '<option value="">Todos los arquetipos</option>';
+  allDecksForLegend = await getJSON(`/stats/decks?${scopedParams({ legend })}`);
+  for (const d of allDecksForLegend) {
+    const variantSuffix = d.variantCount > 1 ? ` · ${d.variantCount} variantes` : "";
+    const label = `${d.championName ?? "Sin Chosen Champion"} — ${d.games} partidas (${pct(d.winRate)})${variantSuffix}`;
+    select.appendChild(el("option", { value: d.clusterId, text: label }));
+  }
+}
+
+// --- Simulador de mulligans ----------------------------------------------------------------
+// Solo Spells y Units se roban (Battlefields se eligen al construir el mazo, las 12 Runes son
+// un recurso aparte y el Sideboard no entra en la partida) — de ahí las dos categorías de abajo.
+const MULLIGAN_DRAW_CATEGORIES = ["spells", "units"];
+// Runas disponibles en tu primer turno según quién empieza: quien va on the draw arranca con
+// una runa extra de compensación. Cartas por encima de eso no se pueden jugar nada más empezar.
+const RUNE_TURN_ONE = { play: 2, draw: 3 };
+// Muestra mínima para fiarnos del win rate específico de "esta carta jugada yendo on the
+// play/draw en este matchup" en vez de caer al win rate general de la carta (menos preciso
+// pero disponible con menos partidas).
+const MULLIGAN_MIN_SIDE_SAMPLE = 3;
+
+async function populateMulliganDeckOptions(legend) {
+  const select = document.getElementById("mull-deck-select");
+  select.innerHTML = "";
+  if (!legend) return [];
+  const clusters = await getJSON(`/stats/decks?${scopedParams({ legend })}`);
+  for (const c of clusters) {
+    const variantSuffix = c.variantCount > 1 ? ` · ${c.variantCount} variantes` : "";
+    select.appendChild(el("option", { value: c.clusterId, text: `${c.championName ?? "Sin Chosen Champion"} — ${c.games} partidas${variantSuffix}` }));
+  }
+  return clusters;
+}
+
+function populateMulliganOpponentOptions(legend) {
+  const select = document.getElementById("mull-opponent-select");
+  select.innerHTML = '<option value="">Todos los rivales</option>';
+  const opponents = allMatchups.filter((m) => m.localLegend === legend).sort((a, b) => b.games - a.games);
+  for (const m of opponents) select.appendChild(el("option", { value: m.opponentLegend, text: `${m.opponentLegend} (${m.games})` }));
+}
+
+async function initMulliganSection() {
+  const legendSelect = document.getElementById("mull-legend-select");
+  const generateBtn = document.getElementById("mull-generate");
+  const previous = legendSelect.value;
+  legendSelect.innerHTML = "";
+  document.getElementById("mulligan-hand").innerHTML = "";
+
+  if (allLegends.length === 0) {
+    legendSelect.appendChild(el("option", { value: "", text: "Sin partidas todavía" }));
+    document.getElementById("mull-deck-select").innerHTML = "";
+    generateBtn.disabled = true;
+    mullClusters = [];
+    return;
+  }
+  for (const l of allLegends) legendSelect.appendChild(el("option", { value: l.legendName, text: `${l.legendName} (${l.games})` }));
+  if (previous && allLegends.some((l) => l.legendName === previous)) legendSelect.value = previous;
+
+  mullClusters = await populateMulliganDeckOptions(legendSelect.value);
+  populateMulliganOpponentOptions(legendSelect.value);
+  generateBtn.disabled = mullClusters.length === 0;
+}
+
+function scoreMulliganCard(card, statsById, side, duplicateIndex) {
+  const stats = statsById.get(card.id) ?? null;
+  const sideStats = stats ? (side === "play" ? stats.onPlay : stats.onDraw) : null;
+  const hasSideSample = !!sideStats && sideStats.games >= MULLIGAN_MIN_SIDE_SAMPLE && sideStats.winRate != null;
+  // Sin muestra suficiente on the play/draw, caemos al win rate general de la carta jugada; sin
+  // datos de ningún tipo, ni suma ni resta (0.5 = neutro, no penaliza ni premia a ciegas).
+  const baseValue = hasSideSample ? sideStats.winRate : stats?.winRateWhenPlayed ?? 0.5;
+
+  const runeCap = RUNE_TURN_ONE[side];
+  const overCost = card.cost != null ? Math.max(0, card.cost - runeCap) : 0;
+  const curvePenalty = Math.min(0.24, overCost * 0.06);
+  const dupPenalty = duplicateIndex > 0 ? 0.1 * duplicateIndex : 0;
+
+  return { card, stats, sideStats, hasSideSample, overCost, duplicateIndex, score: baseValue - curvePenalty - dupPenalty };
+}
+
+function mulliganOutReason(c, side) {
+  const sideLabel = side === "play" ? "on the play" : "on the draw";
+  const parts = [];
+  if (c.duplicateIndex > 0) parts.push(`ya tienes otra copia de ${c.card.name} en la mano — rara vez hacen falta las dos nada más empezar`);
+  if (c.overCost > 0) {
+    const runes = RUNE_TURN_ONE[side];
+    parts.push(`cuesta ${c.card.cost} y en tu primer turno ${sideLabel} solo tendrás ${runes} runa${runes > 1 ? "s" : ""}, tardará turnos en poder jugarse`);
+  }
+  if (c.hasSideSample) parts.push(`su win rate jugándola ${sideLabel} en este matchup es ${pct(c.sideStats.winRate)}, peor que el resto de la mano`);
+  else if (c.stats?.winRateWhenPlayed != null) parts.push(`su win rate cuando se juega en este matchup es ${pct(c.stats.winRateWhenPlayed)}, peor que el resto de la mano`);
+  else parts.push("todavía no hay partidas suficientes con esta carta en este matchup para valorarla mejor");
+  return `Cambiarías ${c.card.name}: ${parts.join("; ")}.`;
+}
+
+function mulliganKeepReason(c, side) {
+  const sideLabel = side === "play" ? "on the play" : "on the draw";
+  const parts = [];
+  // El motivo mostrado tiene que citar el MISMO número que usó el cálculo del score
+  // (`baseValue`), nunca otro distinto (p. ej. el Δ), o el texto contradeciría la decisión.
+  if (c.hasSideSample) parts.push(`${pct(c.sideStats.winRate)} de win rate jugándola ${sideLabel} en este matchup`);
+  else if (c.stats?.winRateWhenPlayed != null) {
+    const deltaSuffix = c.stats.delta != null ? ` (Δ ${fmtDelta(c.stats.delta)})` : "";
+    parts.push(`${pct(c.stats.winRateWhenPlayed)} de win rate cuando se juega en este matchup${deltaSuffix}`);
+  } else parts.push("no hay otra carta en la mano claramente mejor");
+  if (c.overCost > 0) parts.push(`aunque tarda en jugarse (cuesta ${c.card.cost}), compensa por su impacto en este matchup`);
+  return `Te la quedas: ${parts.join("; ")}.`;
+}
+
+function mulliganCardCell(c, side) {
+  const card = c.card;
+  const cell = el("div", { class: "mulligan-card " + (c.out ? "mull-out" : "mull-keep") });
+  const thumb = card.image
+    ? el("img", { class: "thumb", src: card.image, alt: card.name ?? "" })
+    : el("div", { class: "thumb placeholder", text: card.name ?? "?" });
+  cell.appendChild(thumb);
+  cell.appendChild(el("div", { class: "cname", text: card.name ?? card.id }));
+  cell.appendChild(el("div", { class: "mull-tag", text: c.out ? "Cambiar" : "Quedarte" }));
+  if (card.image) markCardHover(cell, card.image);
+  cell.dataset.reason = c.out ? mulliganOutReason(c, side) : mulliganKeepReason(c, side);
+  return cell;
+}
+
+// De las 4 cartas robadas, marca como "cambiar" (máximo 2, como el mulligan real) las que
+// quedan claramente por debajo de la media de la mano, o que son una copia de más de otra
+// carta ya en mano — nunca fuerza a cambiar 2 si la mano ya está bien.
+function renderMulliganHand(hand, statsById, side) {
+  const seen = new Map();
+  const scored = hand.map((card) => {
+    const idx = seen.get(card.id) ?? 0;
+    seen.set(card.id, idx + 1);
+    return scoreMulliganCard(card, statsById, side, idx);
+  });
+
+  const avg = scored.reduce((s, c) => s + c.score, 0) / scored.length;
+  const GAP = 0.05;
+  let outCount = 0;
+  for (const c of scored.slice().sort((a, b) => a.score - b.score)) {
+    if (outCount >= 2) break;
+    if (c.score < avg - GAP || c.duplicateIndex > 0) {
+      c.out = true;
+      outCount++;
+    }
+  }
+
+  const container = document.getElementById("mulligan-hand");
+  container.innerHTML = "";
+  const grid = el("div", { class: "mulligan-hand" });
+  for (const c of scored) grid.appendChild(mulliganCardCell(c, side));
+  container.appendChild(grid);
+  container.appendChild(
+    el("p", {
+      class: "table-legend",
+      text: outCount > 0
+        ? "Las cartas en blanco y negro son las que el simulador sugiere devolver en el mulligan — pasa el ratón por encima (de cualquier carta) para ver por qué."
+        : "El simulador no ve ninguna carta claramente peor que el resto de esta mano: razonable quedártela tal cual.",
+    })
+  );
+}
+
+async function generateMulliganHand() {
+  const legend = document.getElementById("mull-legend-select").value;
+  const clusterId = document.getElementById("mull-deck-select").value;
+  const opponent = document.getElementById("mull-opponent-select").value;
+  const side = document.getElementById("mull-side-select").value;
+  if (!legend || !clusterId) return;
+
+  const cluster = mullClusters.find((c) => c.clusterId === clusterId);
+  if (!cluster) return;
+  const deck = cluster.variants[0].deck;
+
+  const pool = [];
+  for (const cat of MULLIGAN_DRAW_CATEGORIES) {
+    for (const c of deck[cat] ?? []) for (let i = 0; i < c.count; i++) pool.push(c);
+  }
+
+  const container = document.getElementById("mulligan-hand");
+  if (pool.length < 4) {
+    container.innerHTML = "";
+    container.appendChild(el("div", { class: "empty", text: "No hay suficientes cartas registradas en esta lista para simular una mano." }));
+    return;
+  }
+
+  const qs = scopedParams({ legend, deck: clusterId });
+  if (opponent) qs.set("opponent", opponent);
+  const { cards: cardStats } = await getJSON(`/stats/cards?${qs}`);
+  const statsById = new Map(cardStats.map((c) => [c.cardId, c]));
+
+  const shuffled = pool.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  renderMulliganHand(shuffled.slice(0, 4), statsById, side);
+}
+
+// --- Valoración de cartas (estilo 17lands) -------------------------------------------------
+const GRADE_ORDER = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "F"];
+const DOMAIN_ORDER = ["Fury", "Calm", "Mind", "Body", "Chaos", "Order", "Multi", "Colorless"];
+const DOMAIN_COLORS = {
+  Fury: "#e2543a",
+  Calm: "#3aa0e2",
+  Mind: "#9b6fe0",
+  Body: "#4caf6e",
+  Chaos: "#b23a5c",
+  Order: "#d8b23a",
+  Multi: "linear-gradient(135deg, #e2543a, #3aa0e2)",
+  Colorless: "#9a9890",
+};
+
+function gradeTier(grade) {
+  if (grade.startsWith("A")) return "tier-good";
+  if (grade === "F" || grade.startsWith("D")) return "tier-bad";
+  return "tier-mid";
+}
+
+let allCardGrades = [];
+let cardGradesSets = [];
+let cardGradesSetFilter = "all";
+
+function cardGradeTile(c) {
+  const tile = el("div", { class: "grade-card" });
+  const thumb = c.cardImage
+    ? el("img", { class: "thumb", src: c.cardImage, alt: c.cardName ?? "" })
+    : el("div", { class: "thumb placeholder" });
+  tile.appendChild(thumb);
+  tile.appendChild(el("div", { class: "name", text: c.cardName ?? c.cardId }));
+  tile.appendChild(el("div", { class: `pct ${gradeTier(c.grade)}`, text: pct(c.winRateWhenPlayed) }));
+  if (c.cardImage) markCardHover(tile, c.cardImage);
+  tile.dataset.reason = `${c.cardName ?? c.cardId}: ${pct(c.winRateWhenPlayed)} de win rate en ${c.gamesPlayed} partida${c.gamesPlayed === 1 ? "" : "s"} jugada${c.gamesPlayed === 1 ? "" : "s"}.`;
+  return tile;
+}
+
+function renderCardGradesGrid(cards) {
+  const container = document.getElementById("card-grades-grid");
+  container.innerHTML = "";
+  if (cards.length === 0) {
+    container.appendChild(el("div", { class: "empty", text: "Todavía no hay cartas jugadas registradas para este filtro." }));
+    return;
+  }
+
+  const domainsPresent = DOMAIN_ORDER.filter((d) => cards.some((c) => c.domain === d));
+  const gradesPresent = GRADE_ORDER.filter((g) => cards.some((c) => c.grade === g));
+
+  const grid = el("div", { class: "grade-grid" });
+  grid.style.setProperty("--domain-count", domainsPresent.length);
+
+  grid.appendChild(el("div", { class: "grade-head" }));
+  for (const d of domainsPresent) {
+    const dot = el("span", { class: "domain-dot" });
+    dot.style.background = DOMAIN_COLORS[d] ?? "#999";
+    grid.appendChild(el("div", { class: "grade-head" }, [dot, el("span", { text: d })]));
+  }
+
+  for (const grade of gradesPresent) {
+    grid.appendChild(el("div", { class: `grade-row-label ${gradeTier(grade)}`, text: grade }));
+    for (const d of domainsPresent) {
+      const cell = el("div", { class: "grade-cell" });
+      const cardsInCell = cards
+        .filter((c) => c.grade === grade && c.domain === d)
+        .sort((a, b) => b.winRateWhenPlayed - a.winRateWhenPlayed);
+      for (const c of cardsInCell) cell.appendChild(cardGradeTile(c));
+      grid.appendChild(cell);
+    }
+  }
+
+  const scroll = el("div", { class: "grade-scroll" });
+  scroll.appendChild(grid);
+  container.appendChild(scroll);
+}
+
+function renderCardGradesForFilter() {
+  const filtered = cardGradesSetFilter === "all" ? allCardGrades : allCardGrades.filter((c) => c.set === cardGradesSetFilter);
+  renderCardGradesGrid(filtered);
+}
+
+function populateGradeSetTabs() {
+  const container = document.getElementById("grade-set-tabs");
+  container.innerHTML = "";
+  const allBtn = el("button", { class: "btn-secondary" + (cardGradesSetFilter === "all" ? " active" : ""), text: "Todos los sets" });
+  allBtn.addEventListener("click", () => {
+    cardGradesSetFilter = "all";
+    populateGradeSetTabs();
+    renderCardGradesForFilter();
+  });
+  container.appendChild(allBtn);
+  for (const s of cardGradesSets) {
+    const btn = el("button", { class: "btn-secondary" + (cardGradesSetFilter === s.code ? " active" : ""), text: s.name });
+    btn.addEventListener("click", () => {
+      cardGradesSetFilter = s.code;
+      populateGradeSetTabs();
+      renderCardGradesForFilter();
+    });
+    container.appendChild(btn);
+  }
+}
+
+async function loadCardGrades(legend) {
+  const qs = scopedParams(legend ? { legend } : {});
+  const data = await getJSON(`/stats/card-grades?${qs}`);
+  allCardGrades = data.cards;
+  cardGradesSets = data.sets;
+  if (cardGradesSetFilter !== "all" && !cardGradesSets.some((s) => s.code === cardGradesSetFilter)) cardGradesSetFilter = "all";
+  populateGradeSetTabs();
+  renderCardGradesForFilter();
+}
+
+function populateCardGradesLegendOptions() {
+  const select = document.getElementById("grade-legend-select");
+  const previous = select.value;
+  select.innerHTML = "";
+  select.appendChild(el("option", { value: "", text: "Todas las Legends" }));
+  for (const l of allLegends) select.appendChild(el("option", { value: l.legendName, text: `${l.legendName} (${l.games})` }));
+  if (previous && [...select.options].some((o) => o.value === previous)) select.value = previous;
+}
+
+// --- Matriz de matchups (estilo blitz.gg/u.gg) ----------------------------------------------
+let matrixSeasons = [];
+let matrixSeasonSelected = null;
+
+// 0% -> rojo, 50% -> ámbar, 100% -> verde. Mismo criterio de lectura rápida que la referencia.
+function matrixColor(winRate) {
+  if (winRate == null) return null;
+  const hue = winRate <= 0.5 ? winRate * 2 * 40 : 40 + (winRate - 0.5) * 2 * 60;
+  return `hsl(${hue}, 45%, 30%)`;
+}
+
+function matrixCellNode(cell, extraClass) {
+  if (!cell || cell.games === 0) {
+    return el("div", { class: "matrix-cell empty" + (extraClass ? ` ${extraClass}` : ""), text: "—" });
+  }
+  const wrap = el("div", { class: "matrix-cell" + (extraClass ? ` ${extraClass}` : "") });
+  if (!extraClass) wrap.style.background = matrixColor(cell.winRate);
+  if (cell.ciLow != null && cell.ciHigh != null) {
+    wrap.appendChild(el("div", { class: "range", text: `${(cell.ciLow * 100).toFixed(0)}% - ${(cell.ciHigh * 100).toFixed(0)}%` }));
+  }
+  wrap.appendChild(el("div", { class: "pct", text: pct(cell.winRate) }));
+  wrap.appendChild(el("div", { class: "n", text: `${cell.games} partida${cell.games === 1 ? "" : "s"}` }));
+  return wrap;
+}
+
+function renderMatchupMatrix(data) {
+  const container = document.getElementById("matchup-matrix-grid");
+  container.innerHTML = "";
+  if (data.legends.length === 0) {
+    container.appendChild(el("div", { class: "empty", text: "Todavía no hay partidas grabadas en esta season." }));
+    return;
+  }
+
+  const cellByKey = new Map(data.cells.map((c) => [`${c.row}__${c.col}`, c]));
+  const legends = data.legends;
+
+  const grid = el("div", { class: "matrix-grid" });
+  grid.style.setProperty("--legend-count", legends.length);
+
+  grid.appendChild(el("div", { class: "matrix-head" }));
+  grid.appendChild(el("div", { class: "matrix-head", text: "OVERALL" }));
+  for (const l of legends) {
+    const head = el("div", { class: "matrix-head" });
+    if (l.image) {
+      const img = el("img", { src: l.image, alt: "" });
+      head.appendChild(img);
+      markCardHover(head, l.image);
+    }
+    head.appendChild(el("div", { class: "name", text: l.name }));
+    grid.appendChild(head);
+  }
+
+  for (const rowLegend of legends) {
+    const rowHead = el("div", { class: "matrix-row-head" });
+    if (rowLegend.image) {
+      const img = el("img", { src: rowLegend.image, alt: "" });
+      rowHead.appendChild(img);
+      markCardHover(rowHead, rowLegend.image);
+    }
+    rowHead.appendChild(el("div", { class: "name", text: rowLegend.name }));
+    grid.appendChild(rowHead);
+
+    grid.appendChild(matrixCellNode(rowLegend.games > 0 ? rowLegend : null, "overall"));
+
+    for (const colLegend of legends) {
+      grid.appendChild(matrixCellNode(cellByKey.get(`${rowLegend.name}__${colLegend.name}`)));
+    }
+  }
+
+  const scroll = el("div", { class: "matrix-scroll" });
+  scroll.appendChild(grid);
+  container.appendChild(scroll);
+}
+
+async function loadMatchupMatrix(season) {
+  const data = await getJSON(`/stats/matchup-matrix?${scopedParams({ season })}`);
+  renderMatchupMatrix(data);
+}
+
+function populateMatrixSeasonTabs() {
+  const container = document.getElementById("matrix-season-tabs");
+  container.innerHTML = "";
+  for (const s of matrixSeasons) {
+    const btn = el("button", { class: "btn-secondary" + (s.code === matrixSeasonSelected ? " active" : ""), text: s.name });
+    btn.addEventListener("click", () => {
+      matrixSeasonSelected = s.code;
+      populateMatrixSeasonTabs();
+      loadMatchupMatrix(matrixSeasonSelected);
+    });
+    container.appendChild(btn);
+  }
+}
+
+async function initMatrixSection() {
+  matrixSeasons = await getJSON(`/stats/seasons?${scopedParams()}`);
+  const container = document.getElementById("matchup-matrix-grid");
+  if (matrixSeasons.length === 0) {
+    document.getElementById("matrix-season-tabs").innerHTML = "";
+    container.innerHTML = "";
+    container.appendChild(
+      el("div", {
+        class: "empty",
+        text: "Todavía no hay ninguna season registrada. En cuanto grabes una partida, aparece aquí sola.",
+      })
+    );
+    return;
+  }
+  if (!matrixSeasonSelected || !matrixSeasons.some((s) => s.code === matrixSeasonSelected)) {
+    matrixSeasonSelected = matrixSeasons[0].code;
+  }
+  populateMatrixSeasonTabs();
+  await loadMatchupMatrix(matrixSeasonSelected);
+}
+
+async function loadRecentMatches() {
+  const container = document.getElementById("matches-table");
+  if (!myContributorId) {
+    container.innerHTML = "";
+    container.appendChild(
+      el("div", {
+        class: "empty",
+        text: 'Abre el panel desde el icono de la extensión ("Ver panel de estadísticas") para ver tu propio historial de partidas.',
+      })
+    );
+    return;
+  }
+  const matches = await getJSON(`/matches?${new URLSearchParams({ limit: 100, contributor: myContributorId })}`);
+  renderMatchesTable(matches);
+}
+
+function updateScopeUI() {
+  const mineBtn = document.querySelector('#scope-toggle button[data-scope="mine"]');
+  const allBtn = document.querySelector('#scope-toggle button[data-scope="all"]');
+  const hint = document.getElementById("scope-hint");
+  if (!myContributorId) {
+    mineBtn.disabled = true;
+    scope = "all";
+    hint.textContent = 'Sin identificar: abre el panel desde el icono de la extensión para ver solo tus partidas.';
+  } else {
+    mineBtn.disabled = false;
+    hint.textContent = "";
+  }
+  mineBtn.classList.toggle("active", scope === "mine");
+  allBtn.classList.toggle("active", scope === "all");
+}
+
+async function refreshLegendSelect() {
+  const legendSelect = document.getElementById("legend-select");
+  const previous = legendSelect.value;
+  legendSelect.innerHTML = "";
+  if (allLegends.length === 0) {
+    legendSelect.appendChild(el("option", { value: "", text: "Sin partidas todavía" }));
+    document.getElementById("tiles").innerHTML = "";
+    renderCardsTable([]);
+    renderMatchupsTable([]);
+    renderDeckList(null);
+    return false;
+  }
+  for (const l of allLegends) legendSelect.appendChild(el("option", { value: l.legendName, text: `${l.legendName} (${l.games})` }));
+  if (previous && allLegends.some((l) => l.legendName === previous)) legendSelect.value = previous;
+  return true;
+}
+
+async function reloadAll() {
+  const [legends, matchups] = await Promise.all([getJSON(`/stats/legends?${scopedParams()}`), getJSON(`/stats/matchups?${scopedParams()}`)]);
+  allLegends = legends;
+  allMatchups = matchups;
+
+  const hasLegends = await refreshLegendSelect();
+  await initMulliganSection();
+  populateCardGradesLegendOptions();
+  await loadCardGrades(document.getElementById("grade-legend-select").value);
+  await initMatrixSection();
+  if (!hasLegends) return;
+
+  const legendSelect = document.getElementById("legend-select");
+  populateOpponentOptions(legendSelect.value);
+  await populateDeckOptions(legendSelect.value);
+  await loadForSelection();
+}
+
+async function init() {
+  showView(currentView());
+  updateScopeUI();
+  await reloadAll();
+  await loadRecentMatches();
+
+  document.getElementById("legend-select").addEventListener("change", async () => {
+    const legendSelect = document.getElementById("legend-select");
+    populateOpponentOptions(legendSelect.value);
+    await populateDeckOptions(legendSelect.value);
+    loadForSelection();
+  });
+  document.getElementById("opponent-select").addEventListener("change", loadForSelection);
+  document.getElementById("deck-select").addEventListener("change", loadForSelection);
+
+  document.getElementById("mull-legend-select").addEventListener("change", async (e) => {
+    mullClusters = await populateMulliganDeckOptions(e.target.value);
+    populateMulliganOpponentOptions(e.target.value);
+    document.getElementById("mull-generate").disabled = mullClusters.length === 0;
+    document.getElementById("mulligan-hand").innerHTML = "";
+  });
+  document.getElementById("mull-generate").addEventListener("click", generateMulliganHand);
+
+  document.getElementById("grade-legend-select").addEventListener("change", (e) => loadCardGrades(e.target.value));
+
+  document.getElementById("scope-toggle").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-scope]");
+    if (!btn || btn.disabled || btn.dataset.scope === scope) return;
+    scope = btn.dataset.scope;
+    updateScopeUI();
+    await reloadAll();
+  });
+}
+
+init().catch((err) => {
+  document.querySelector("main").appendChild(el("div", { class: "empty", text: `Error cargando datos: ${err.message}. ¿Está el backend corriendo?` }));
+});
+</script>
+</body>
+</html>

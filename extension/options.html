@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>12 Runes — Opciones</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 420px; margin: 32px auto; color: #111827; }
+      label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+      input { width: 100%; padding: 8px; font-size: 13px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 6px; }
+      button { margin-top: 10px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+      #status { margin-left: 8px; font-size: 12px; color: #16a34a; }
+    </style>
+  </head>
+  <body>
+    <h1>12 Runes</h1>
+    <label for="backendUrl">URL del servidor</label>
+    <input id="backendUrl" type="url" placeholder="http://localhost:4000" />
+    <button id="save">Guardar</button>
+    <span id="status"></span>
+    <script src="options.js"></script>
+  </body>
+</html>
