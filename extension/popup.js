@@ -41,7 +41,7 @@ async function render() {
 }
 
 async function retryUpload(idx) {
-  const { matches, backendUrl } = await chrome.storage.local.get({ matches: [], backendUrl: "http://localhost:4000" });
+  const { matches, backendUrl } = await chrome.storage.local.get({ matches: [], backendUrl: "https://one2-runes.onrender.com" });
   const m = matches[idx];
   if (!m) return;
   try {
@@ -68,7 +68,7 @@ async function getContributorId() {
 }
 
 document.getElementById("open-dashboard").addEventListener("click", async () => {
-  const { backendUrl } = await chrome.storage.local.get({ backendUrl: "http://localhost:4000" });
+  const { backendUrl } = await chrome.storage.local.get({ backendUrl: "https://one2-runes.onrender.com" });
   const contributorId = await getContributorId();
   chrome.tabs.create({ url: `${backendUrl}/?me=${encodeURIComponent(contributorId)}` });
 });

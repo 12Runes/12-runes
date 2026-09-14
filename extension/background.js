@@ -382,7 +382,7 @@ async function getContributorId() {
 
 async function uploadAndStore(recordWithoutResult, result) {
   const record = { ...recordWithoutResult, result, contributorId: await getContributorId() };
-  const { backendUrl } = await chrome.storage.local.get({ backendUrl: "http://localhost:4000" });
+  const { backendUrl } = await chrome.storage.local.get({ backendUrl: "https://one2-runes.onrender.com" });
 
   let uploaded = false;
   let error = null;
