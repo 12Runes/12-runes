@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "12 Runes",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Graba tus partidas de Riftbound jugadas en tcg-arena.fr y súbelas a tu propio servidor de estadísticas.",
   "permissions": ["storage", "downloads"],
   "host_permissions": ["https://one2-runes.onrender.com/*", "http://localhost:4000/*"],
@@ -27,6 +27,11 @@
       "matches": ["https://tcg-arena.fr/*"],
       "js": ["content-ui.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://one2-runes.onrender.com/*", "http://localhost:4000/*"],
+      "js": ["version-badge.js"],
+      "run_at": "document_start"
     }
   ],
   "background": {

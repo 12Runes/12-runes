@@ -155,6 +155,14 @@
     content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px;
     background: linear-gradient(90deg, var(--series-1), var(--accent-2));
   }
+  .install-card.update-available::before { background: var(--good); }
+  .install-card.update-available .btn-primary { background: var(--good); }
+  .update-flag {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
+    color: var(--good-text); background: color-mix(in srgb, var(--good) 16%, var(--surface-1));
+    border: 1px solid color-mix(in srgb, var(--good) 45%, var(--border)); border-radius: 999px;
+    padding: 4px 12px; margin: 0 0 10px;
+  }
   .install-card-text { flex: 1 1 320px; min-width: 0; }
   .install-card-text h2 { margin: 0 0 6px; }
   .install-card-text p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0 0 10px; }
@@ -506,8 +514,9 @@
   </div>
 
   <div class="view" data-view="home" id="view-home">
-    <div class="install-card">
+    <div class="install-card" id="install-card">
       <div class="install-card-text">
+        <div class="update-flag" id="update-flag" hidden>Hay una nueva versión. Repite los pasos de instalación.</div>
         <h2>Instalar la extensión</h2>
         <p>
           Todavía no está en la Chrome Web Store, así que se instala en modo desarrollador (tarda un minuto):
@@ -1628,7 +1637,28 @@ async function reloadAll() {
   await loadForSelection();
 }
 
+// El content script `version-badge.js` de la extensión (si está instalada y es reciente,
+// ver README) deja su versión en <html data-rbt-extension-version="...">. Si no aparece ese
+// atributo no sabemos si es porque no está instalada o porque es una versión previa a este
+// mismo aviso — en ambos casos no decimos nada (el botón por defecto ya cubre "instálala").
+// Solo avisamos cuando SÍ hay una versión detectada y no coincide con la última publicada.
+async function checkExtensionVersion() {
+  try {
+    const installed = document.documentElement.dataset.rbtExtensionVersion;
+    if (!installed) return;
+    const latest = (await (await fetch("downloads/version.txt", { cache: "no-store" })).text()).trim();
+    if (latest && installed !== latest) {
+      document.getElementById("install-card")?.classList.add("update-available");
+      const flag = document.getElementById("update-flag");
+      if (flag) flag.hidden = false;
+    }
+  } catch {
+    // sin conexión al archivo de versión: no bloquea el resto de la página
+  }
+}
+
 async function init() {
+  checkExtensionVersion();
   showView(currentView());
   updateScopeUI();
   await reloadAll();
