@@ -146,6 +146,26 @@
   .nav-icon, .nav-icon * { stroke: currentColor; }
 
   /* --- Menú de inicio --- */
+  .install-card {
+    position: relative; background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px 26px; margin: 8px 0 24px; overflow: hidden; animation: fadeInUp 0.35s ease both;
+    display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between;
+  }
+  .install-card::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, var(--series-1), var(--accent-2));
+  }
+  .install-card-text { flex: 1 1 320px; min-width: 0; }
+  .install-card-text h2 { margin: 0 0 6px; }
+  .install-card-text p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0 0 10px; }
+  .install-steps { margin: 0; padding-left: 20px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.9; }
+  .install-steps code {
+    background: var(--page); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; font-size: 12px;
+  }
+  .install-card-cta { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .install-card-cta .btn-primary { display: inline-block; text-decoration: none; text-align: center; margin: 0; }
+  .install-card-cta .hint { font-size: 11px; color: var(--text-muted); }
+
   .home-menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin: 8px 0 12px; }
   .home-card {
     position: relative; display: block; background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px;
@@ -486,6 +506,23 @@
   </div>
 
   <div class="view" data-view="home" id="view-home">
+    <div class="install-card">
+      <div class="install-card-text">
+        <h2>Instalar la extensión</h2>
+        <p>
+          Todavía no está en la Chrome Web Store, así que se instala en modo desarrollador (tarda un minuto):
+        </p>
+        <ol class="install-steps">
+          <li>Descarga el .zip y descomprímelo en una carpeta que no vayas a borrar.</li>
+          <li>Ve a <code>chrome://extensions</code> y activa "Modo desarrollador" (arriba a la derecha).</li>
+          <li>Pulsa "Cargar descomprimida" y elige esa carpeta.</li>
+        </ol>
+      </div>
+      <div class="install-card-cta">
+        <a class="btn-primary" href="downloads/12-runes-extension.zip" download>Descargar extensión (.zip)</a>
+        <span class="hint">Cuando la actualicemos, repite estos pasos con el zip nuevo.</span>
+      </div>
+    </div>
     <div class="home-menu">
       <a class="home-card" href="#tracker">
         <div class="home-card-icon">
