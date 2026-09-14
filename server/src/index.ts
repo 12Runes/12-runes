@@ -4,6 +4,8 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import staticPlugin from "@fastify/static";
 import { PrismaClient } from "@prisma/client";
+import { PrismaLibSQL } from "@prisma/adapter-libsql";
+import { createClient } from "@libsql/client";
 import {
   computeCardStats,
   computeDeckClusters,
@@ -22,7 +24,13 @@ const SET_CHRONO_ORDER = ["OGN", "OGS", "SFD", "UNL", "VEN"];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const prisma = new PrismaClient();
+// TURSO_DATABASE_URL/TURSO_AUTH_TOKEN apuntan a la base de producción (ver README); en local,
+// sin esas variables, cae en el archivo sqlite de DATABASE_URL (server/.env).
+const libsqlClient = createClient({
+  url: process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? "file:./dev.db",
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
+const prisma = new PrismaClient({ adapter: new PrismaLibSQL(libsqlClient) });
 const app = Fastify({ logger: true });
 
 await app.register(cors, { origin: true });
