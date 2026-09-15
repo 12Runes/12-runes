@@ -82,4 +82,21 @@ document.getElementById("export").addEventListener("click", async () => {
   chrome.downloads.download({ url, filename: `riftbound-matches-${Date.now()}.json`, saveAs: true }, () => URL.revokeObjectURL(url));
 });
 
+// Modo diagnóstico temporal (ver background.js, maybeDebugCapture): al activarlo se vacía el
+// log anterior, para que cada captura corresponda a una sola partida de prueba y no se mezcle
+// con capturas viejas.
+const debugToggle = document.getElementById("debug-toggle");
+chrome.storage.local.get({ debugCapture: false }, ({ debugCapture }) => (debugToggle.checked = debugCapture));
+debugToggle.addEventListener("change", async () => {
+  await chrome.storage.local.set({ debugCapture: debugToggle.checked });
+  if (debugToggle.checked) await chrome.storage.local.set({ debugLog: [] });
+});
+
+document.getElementById("debug-export").addEventListener("click", async () => {
+  const { debugLog } = await chrome.storage.local.get({ debugLog: [] });
+  const blob = new Blob([JSON.stringify(debugLog, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  chrome.downloads.download({ url, filename: `riftbound-debug-${Date.now()}.json`, saveAs: true }, () => URL.revokeObjectURL(url));
+});
+
 render();

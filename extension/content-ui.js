@@ -37,7 +37,7 @@
       .result-btn { color:#fff; }
       .result-btn.win { background:#16a34a; }
       .result-btn.loss { background:#dc2626; }
-      .result-btn.unknown { background:#4b5563; }
+      .result-btn.discard { background:#4b5563; }
       .result-btn:hover { filter:brightness(1.15); }
       .badge { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; }
       .pending-card { border:1px solid #374151; border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px; }
@@ -107,6 +107,10 @@
     // de que llegue al <select>) y el resultado se quedaba en lo que tuviera seleccionado por
     // defecto. Los botones normales (Grabar/Confirmar/Descartar) nunca han fallado así, así que
     // el resultado se elige ahora con tres botones directos, sin picker nativo de por medio.
+    //
+    // Solo Gané/Perdí suben algo a la base de datos. "Descartar partida" (antes "No sé", que sí
+    // subía con resultado UNKNOWN) no sube nada — si no estás seguro de que la partida cuenta
+    // como dato real, la opción es descartarla, no adivinar el resultado.
     const pendingHtml = pendingGames
       .map(
         (p) => `
@@ -115,9 +119,8 @@
           <div class="result-row">
             <button class="result-btn win" data-result="WIN">Gané</button>
             <button class="result-btn loss" data-result="LOSS">Perdí</button>
-            <button class="result-btn unknown" data-result="UNKNOWN">No sé</button>
+            <button class="result-btn discard rbt-discard-pending">Descartar partida</button>
           </div>
-          <div class="row"><button class="secondary rbt-discard-pending">Descartar</button></div>
         </div>`
       )
       .join("");
@@ -134,7 +137,7 @@
         ${recordingHtml}
       </div>`;
 
-    root.querySelectorAll(".pending-card .result-btn").forEach((btn) => {
+    root.querySelectorAll(".pending-card .result-btn[data-result]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const card = btn.closest(".pending-card");
         const pendingId = card.dataset.pendingId;

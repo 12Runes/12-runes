@@ -30,6 +30,13 @@
       <button id="options">Configurar servidor</button>
       <button id="export">Exportar todo (JSON)</button>
     </footer>
+    <div id="debug-section" style="margin-top:10px; padding-top:10px; border-top:1px solid #e5e7eb; font-size:11px; color:#6b7280;">
+      <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+        <input type="checkbox" id="debug-toggle" />
+        Modo diagnóstico (temporal): captura todo el tráfico, no solo lo que ya usamos
+      </label>
+      <button id="debug-export" style="width:100%; margin-top:6px; padding:6px; cursor:pointer; font-size:11px;">Descargar log de diagnóstico</button>
+    </div>
     <script src="popup.js"></script>
   </body>
 </html>

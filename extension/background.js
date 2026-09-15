@@ -20,9 +20,20 @@ function runExclusive(tabId, fn) {
   return next;
 }
 
+// Por debajo de esto, una "partida terminada" no cuenta como real: ni se pide confirmar
+// resultado ni se sube nada. Cubre dos casos que generaban datos falsos: pulsar "Play" varias
+// veces seguidas (se abre un canal, no llega a jugarse nada, y el anterior se daba por
+// terminado igualmente) y una serie que se corta nada más empezar. 4 = mínimo 2 turnos por
+// cada uno de los dos jugadores (los turnos se alternan 1 a 1 entre los dos).
+const MIN_TOTAL_TURNS = 4;
+
+function hasMinimumActivity(state) {
+  return (state.match?.turnCount ?? 0) >= MIN_TOTAL_TURNS;
+}
+
 function freshState() {
   return {
-    channelState: "idle", // idle | awaiting-consent | recording | ended-awaiting-save | declined
+    channelState: "idle", // idle | awaiting-consent | recording | closed
     seriesId: null, // agrupa las partidas de un mismo Bo3 (misma conexión WebRTC)
     gameNumber: 1, // Game 1, 2, 3... dentro de la serie
     localPlayerId: null,
@@ -192,7 +203,24 @@ function freshGame(previousMatch) {
   };
 }
 
+// Herramienta temporal de diagnóstico (activable desde el popup, desactivada por defecto):
+// vuelca TODO lo que llega por el canal, no solo lo que `classifyEnvelope` ya sabe interpretar
+// — para poder investigar en qué mensaje viaja algo que hoy no capturamos (p. ej. qué
+// battlefield se juega). Nunca se sube a ningún sitio: se queda en local hasta que se descarga
+// a mano desde el popup. Tope de entradas para no crecer sin límite si alguien se olvida de
+// desactivarlo.
+const DEBUG_LOG_CAP = 5000;
+async function maybeDebugCapture(direction, value) {
+  const { debugCapture } = await chrome.storage.local.get({ debugCapture: false });
+  if (!debugCapture) return;
+  const { debugLog } = await chrome.storage.local.get({ debugLog: [] });
+  debugLog.push({ ts: Date.now(), direction, value });
+  if (debugLog.length > DEBUG_LOG_CAP) debugLog.shift();
+  await chrome.storage.local.set({ debugLog });
+}
+
 async function processDecodedValue(tabId, direction, value) {
+  await maybeDebugCapture(direction, value);
   const classified = classifyEnvelope(value, direction);
   if (classified.kind === "ignore") return;
 
@@ -221,6 +249,20 @@ async function processDecodedValue(tabId, direction, value) {
 // resultado) y empezamos a grabar la siguiente sin cortar.
 async function handleGameRestart(tabId, state) {
   const finishedGameNumber = state.gameNumber;
+  const hadActivity = hasMinimumActivity(state);
+  state.localEliminated = null;
+  state.opponentEliminated = null;
+
+  if (!hadActivity) {
+    // "Restart" sin apenas jugar (p. ej. mano inicial mala, o un reinicio inmediato tras varios
+    // clics en "Play"): la partida que "termina" no llegó a existir de verdad, así que no
+    // generamos pendiente ni aviso, y el número de game no sube — la siguiente es la misma
+    // partida real, no una nueva.
+    state.match = freshGame(state.match);
+    await setState(tabId, state);
+    return;
+  }
+
   const guessedResult = guessResult(state);
   const record = buildMatchRecord(state, guessedResult);
   const summary = buildSummary(state);
@@ -229,8 +271,6 @@ async function handleGameRestart(tabId, state) {
   state.pendingSaves.push({ id: pendingId, record });
 
   state.gameNumber = finishedGameNumber + 1;
-  state.localEliminated = null;
-  state.opponentEliminated = null;
   state.match = freshGame(state.match);
 
   await setState(tabId, state);
@@ -293,10 +333,62 @@ async function onRawMessage(tabId, payload) {
   await processDecodedValue(tabId, payload.direction, value);
 }
 
+// Cierra la partida que se estuviera grabando (`state.channelState === "recording"`) como si la
+// conexión se hubiera cortado sola: si tuvo actividad real (`hasMinimumActivity`), se añade a
+// `pendingSaves` para que el usuario confirme el resultado; si no (0-1 turnos — el caso típico
+// de un canal que se abre y no llega a jugarse nada), se descarta directamente, sin generar
+// aviso ni pendiente. Muta `state` in place y lo persiste. La usan tanto `onChannelClose` como
+// `onChannelOpen` (cuando un canal nuevo se abre mientras el anterior seguía "recording").
+async function finalizePendingAndNotify(tabId, state) {
+  if (hasMinimumActivity(state)) {
+    const guessedResult = guessResult(state);
+    const record = buildMatchRecord(state, guessedResult);
+    state.pendingSaves.push({ id: crypto.randomUUID(), record });
+  }
+  state.channelState = "closed";
+  state.match = null;
+  await setState(tabId, state);
+
+  if (state.pendingSaves.length === 0) {
+    chrome.tabs.sendMessage(tabId, { type: "hide-overlay" }).catch(() => {});
+    return;
+  }
+  chrome.tabs
+    .sendMessage(tabId, {
+      type: "series-ended",
+      pendingGames: state.pendingSaves.map((p) => ({
+        pendingId: p.id,
+        finishedGameNumber: p.record.gameNumber,
+        guessedResult: p.record.result,
+        summary: {
+          opponentPseudo: p.record.opponentPseudo,
+          turnCount: p.record.turnCount,
+          localLegend: p.record.localDeck?.legendName ?? null,
+          opponentLegend: p.record.opponentDeck?.legendName ?? null,
+        },
+      })),
+    })
+    .catch(() => {});
+}
+
+// Si el usuario le da varias veces seguidas a "Play" (o abre una partida nueva con confirmar-
+// pendientes todavía sin contestar), TCG Arena puede abrir un canal WebRTC nuevo antes de que el
+// anterior se haya cerrado. Sin esto, ese canal nuevo pisaba el estado entero (`freshState()`
+// incondicional) y podía: (a) tirar una grabación real en curso sin pedir confirmación, o (b)
+// perder partidas ya terminadas que seguían esperando que el usuario eligiera Gané/Perdí. Ahora
+// el canal nuevo siempre "gana" (es la conexión real, la de la última vez que se le dio a
+// "Play"), pero antes se cierra bien lo anterior y sus pendientes se llevan a la conexión nueva
+// en vez de perderse.
 async function onChannelOpen(tabId) {
+  const prev = await getState(tabId);
+  if (prev.channelState === "recording") {
+    await finalizePendingAndNotify(tabId, prev);
+  }
+
   const state = freshState();
   state.channelState = "awaiting-consent";
   state.seriesId = crypto.randomUUID();
+  state.pendingSaves = prev.pendingSaves;
   await setState(tabId, state);
   chrome.tabs.sendMessage(tabId, { type: "show-consent-prompt" }).catch(() => {});
 }
@@ -305,35 +397,14 @@ async function onChannelOpen(tabId) {
 // aparte Y, en el mismo instante, se subían ya como "UNKNOWN" las partidas anteriores de la
 // serie que seguían sin confirmar — sin darle tiempo real al usuario a contestar (el panel de
 // confirmación se sustituía por el de guardado final antes de que pudiera pulsar nada). Ahora
-// la última partida se trata exactamente igual que las anteriores: se añade a `pendingSaves` y
-// se manda TODA la lista junta en un solo mensaje, así el panel muestra una tarjeta por cada
-// partida de la serie sin confirmar (incluida la que acaba de terminar) y nada se sube hasta
-// que el usuario elige un resultado para cada una.
+// la última partida se trata exactamente igual que las anteriores: se añade a `pendingSaves` (si
+// tuvo actividad real, ver `finalizePendingAndNotify`) y se manda TODA la lista junta en un solo
+// mensaje, así el panel muestra una tarjeta por cada partida de la serie sin confirmar (incluida
+// la que acaba de terminar) y nada se sube hasta que el usuario elige un resultado para cada una.
 async function onChannelClose(tabId) {
   const state = await getState(tabId);
   if (state.channelState === "recording") {
-    const guessedResult = guessResult(state);
-    const record = buildMatchRecord(state, guessedResult);
-    state.pendingSaves.push({ id: crypto.randomUUID(), record });
-    state.channelState = "closed";
-    state.match = null;
-    await setState(tabId, state);
-    chrome.tabs
-      .sendMessage(tabId, {
-        type: "series-ended",
-        pendingGames: state.pendingSaves.map((p) => ({
-          pendingId: p.id,
-          finishedGameNumber: p.record.gameNumber,
-          guessedResult: p.record.result,
-          summary: {
-            opponentPseudo: p.record.opponentPseudo,
-            turnCount: p.record.turnCount,
-            localLegend: p.record.localDeck?.legendName ?? null,
-            opponentLegend: p.record.opponentDeck?.legendName ?? null,
-          },
-        })),
-      })
-      .catch(() => {});
+    await finalizePendingAndNotify(tabId, state);
     return;
   }
 
@@ -344,10 +415,10 @@ async function onChannelClose(tabId) {
   }
 
   // Red de seguridad para estados que no deberían darse en el flujo normal (p. ej. la conexión
-  // se cierra dos veces, o queda algo huérfano de una versión anterior): no lo perdemos en
-  // silencio, se guarda como resultado desconocido en vez de desaparecer.
+  // se cierra dos veces, o queda algo huérfano de una versión anterior). Antes esto subía las
+  // partidas pendientes como resultado desconocido; ahora, igual que "Descartar partida", nada
+  // se sube sin que el usuario haya pulsado Gané/Perdí — se descartan sin más.
   if (state.pendingSaves.length > 0) {
-    for (const pending of state.pendingSaves) await uploadAndStore(pending.record, "UNKNOWN");
     await clearState(tabId);
   }
 }
@@ -455,11 +526,11 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 });
 
 // Si la pestaña se cierra con partidas de la serie sin confirmar, ya no hay a quién
-// preguntarle: se suben como resultado desconocido en vez de perderse.
+// preguntarle: se descartan en vez de subirse con un resultado que nadie ha confirmado (solo
+// Gané/Perdí suben algo a la base de datos — cerrar la pestaña sin contestar equivale a
+// "Descartar partida").
 chrome.tabs.onRemoved.addListener((tabId) => {
   runExclusive(tabId, async () => {
-    const state = await getState(tabId);
-    for (const pending of state.pendingSaves) await uploadAndStore(pending.record, "UNKNOWN");
     await clearState(tabId);
     tabQueues.delete(tabId);
   });
