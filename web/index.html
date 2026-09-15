@@ -136,6 +136,25 @@
   .scope-toggle button:disabled { cursor: not-allowed; opacity: 0.4; }
   #scope-hint { font-size: 12px; }
 
+  /* --- Barra fija de tema/idioma --- */
+  .corner-controls {
+    position: fixed; top: 14px; right: 14px; z-index: 50;
+    display: flex; gap: 6px; background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 999px; padding: 5px; box-shadow: 0 6px 18px -10px rgba(0,0,0,0.35);
+  }
+  .corner-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    width: 32px; height: 32px; border-radius: 999px; border: none; background: transparent;
+    color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 12px; font-weight: 700;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .corner-btn:hover { background: var(--gridline); color: var(--text-primary); }
+  .corner-btn svg { width: 17px; height: 17px; }
+  #lang-toggle { width: auto; padding: 0 10px; letter-spacing: 0.02em; }
+  @media (max-width: 420px) {
+    .corner-controls { top: 10px; right: 10px; }
+  }
+
   /* --- Navegación entre herramientas --- */
   .main-nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 20px; }
   .main-nav a {
@@ -458,6 +477,9 @@
   @media (max-width: 760px) {
     main { padding: 22px 16px 56px; }
     .brand { gap: 14px; }
+    /* Deja hueco para los botones fijos de tema/idioma, que sino tapan el subtítulo cuando
+       hace dos líneas en pantallas estrechas. */
+    .brand > div { max-width: calc(100vw - 200px); }
     .brand-mark { width: 54px; height: 54px; border-radius: 16px; font-size: 20px; }
     h1 { font-size: 21px; }
     .controls { flex-direction: column; align-items: stretch; }
@@ -477,15 +499,21 @@
 </style>
 </head>
 <body>
+<div class="corner-controls">
+  <button type="button" class="corner-btn" id="lang-toggle" title="Switch to English" aria-label="Switch to English">ES</button>
+  <button type="button" class="corner-btn" id="theme-toggle" title="Cambiar tema" aria-label="Cambiar entre modo claro y oscuro">
+    <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+  </button>
+</div>
 <main>
   <div class="brand header-glow">
     <div class="brand-mark"><span>12</span></div>
     <div>
       <h1>12 Runes</h1>
-      <p class="subtitle">Estadísticas de Riftbound a partir de tus partidas en tcg-arena.fr</p>
+      <p class="subtitle" data-i18n="header.subtitle">Estadísticas de Riftbound a partir de tus partidas en tcg-arena.fr</p>
     </div>
   </div>
-  <p class="description">
+  <p class="description" data-i18n="header.description">
     12 Runes graba en segundo plano las partidas de Riftbound que juegas en tcg-arena.fr (con tu permiso en
     cada una) y las convierte en estadísticas: qué Legends te funcionan mejor, cómo cambia tu win rate según
     si vas on the play o on the draw, qué cartas concretas están asociadas a más victorias en cada matchup,
@@ -498,30 +526,30 @@
   <nav class="main-nav" id="main-nav">
     <a href="#home" class="nav-link" data-view="home">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
-      Inicio
+      <span data-i18n="nav.home">Inicio</span>
     </a>
     <a href="#tracker" class="nav-link" data-view="tracker">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-6"/></svg>
-      Rendimiento y win rate
+      <span data-i18n="nav.tracker">Rendimiento y win rate</span>
     </a>
     <a href="#mulligan" class="nav-link" data-view="mulligan">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
-      Simulador de mulligans
+      <span data-i18n="nav.mulligan">Simulador de mulligans</span>
     </a>
     <a href="#cards" class="nav-link" data-view="cards">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.1 5.8 20.8l1.6-6.8-5.2-4.6 6.9-.6L12 2.5z"/></svg>
-      Valoración de cartas
+      <span data-i18n="nav.cards">Valoración de cartas</span>
     </a>
     <a href="#matrix" class="nav-link" data-view="matrix">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Matriz de matchups
+      <span data-i18n="nav.matrix">Matriz de matchups</span>
     </a>
   </nav>
 
   <div class="scope-row">
     <div class="scope-toggle" id="scope-toggle">
-      <button data-scope="mine" class="active">Mis partidas</button>
-      <button data-scope="all">Comunidad</button>
+      <button data-scope="mine" class="active" data-i18n="scope.mine">Mis partidas</button>
+      <button data-scope="all" data-i18n="scope.community">Comunidad</button>
     </div>
     <span class="muted" id="scope-hint"></span>
   </div>
@@ -529,20 +557,20 @@
   <div class="view" data-view="home" id="view-home">
     <div class="install-card" id="install-card">
       <div class="install-card-text">
-        <div class="update-flag" id="update-flag">Hay una nueva versión. Repite los pasos de instalación.</div>
-        <h2>Instalar la extensión</h2>
-        <p>
+        <div class="update-flag" id="update-flag" data-i18n="install.updateFlag">Hay una nueva versión. Repite los pasos de instalación.</div>
+        <h2 data-i18n="install.title">Instalar la extensión</h2>
+        <p data-i18n="install.intro">
           Todavía no está en la Chrome Web Store, así que se instala en modo desarrollador (tarda un minuto):
         </p>
         <ol class="install-steps">
-          <li>Descarga el .zip y descomprímelo en una carpeta que no vayas a borrar.</li>
-          <li>Ve a <code>chrome://extensions</code> y activa "Modo desarrollador" (arriba a la derecha).</li>
-          <li>Pulsa "Cargar descomprimida" y elige esa carpeta.</li>
+          <li data-i18n="install.step1">Descarga el .zip y descomprímelo en una carpeta que no vayas a borrar.</li>
+          <li><span data-i18n="install.step2Pre">Ve a</span> <code>chrome://extensions</code> <span data-i18n="install.step2Post">y activa "Modo desarrollador" (arriba a la derecha).</span></li>
+          <li data-i18n="install.step3">Pulsa "Cargar descomprimida" y elige esa carpeta.</li>
         </ol>
       </div>
       <div class="install-card-cta">
-        <a class="btn-primary" href="downloads/12-runes-extension.zip" download>Descargar extensión (.zip)</a>
-        <span class="hint">Cuando la actualicemos, repite estos pasos con el zip nuevo.</span>
+        <a class="btn-primary" href="downloads/12-runes-extension.zip" download data-i18n="install.button">Descargar extensión (.zip)</a>
+        <span class="hint" data-i18n="install.hint">Cuando la actualicemos, repite estos pasos con el zip nuevo.</span>
       </div>
     </div>
     <div class="home-menu">
@@ -550,8 +578,8 @@
         <div class="home-card-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-6"/></svg>
         </div>
-        <div class="home-card-title">Rendimiento y win rate</div>
-        <div class="home-card-desc">
+        <div class="home-card-title" data-i18n="home.trackerTitle">Rendimiento y win rate</div>
+        <div class="home-card-desc" data-i18n="home.trackerDesc">
           Estadísticas por Legend, rendimiento de cada carta jugada, matchups y tus partidas recientes —
           la vista completa de cómo te está yendo.
         </div>
@@ -561,8 +589,8 @@
         <div class="home-card-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
         </div>
-        <div class="home-card-title">Simulador de mulligans</div>
-        <div class="home-card-desc">
+        <div class="home-card-title" data-i18n="home.mulliganTitle">Simulador de mulligans</div>
+        <div class="home-card-desc" data-i18n="home.mulliganDesc">
           Genera una mano de apertura al azar con tu arquetipo y te sugiere qué cartas cambiar en el
           mulligan — y por qué.
         </div>
@@ -572,8 +600,8 @@
         <div class="home-card-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.1 5.8 20.8l1.6-6.8-5.2-4.6 6.9-.6L12 2.5z"/></svg>
         </div>
-        <div class="home-card-title">Valoración de cartas</div>
-        <div class="home-card-desc">
+        <div class="home-card-title" data-i18n="home.cardsTitle">Valoración de cartas</div>
+        <div class="home-card-desc" data-i18n="home.cardsDesc">
           Todas tus cartas puntuadas por win rate, agrupadas por dominio de runa y por set — al estilo de
           las tablas de 17lands.com.
         </div>
@@ -583,8 +611,8 @@
         <div class="home-card-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         </div>
-        <div class="home-card-title">Matriz de matchups</div>
-        <div class="home-card-desc">
+        <div class="home-card-title" data-i18n="home.matrixTitle">Matriz de matchups</div>
+        <div class="home-card-desc" data-i18n="home.matrixDesc">
           Win rate de cada Legend contra cada una de las demás, coloreado de rojo a verde y con
           intervalo de confianza — filtrable por season.
         </div>
@@ -596,19 +624,19 @@
   <div class="view" data-view="tracker" id="view-tracker-top">
     <div class="controls">
       <div class="field">
-        <label for="legend-select">Tu Legend</label>
+        <label for="legend-select" data-i18n="field.yourLegend">Tu Legend</label>
         <select id="legend-select"></select>
       </div>
       <div class="field">
-        <label for="deck-select">Arquetipo</label>
+        <label for="deck-select" data-i18n="field.archetype">Arquetipo</label>
         <select id="deck-select">
-          <option value="">Todos los arquetipos</option>
+          <option value="" data-i18n="option.allArchetypes">Todos los arquetipos</option>
         </select>
       </div>
       <div class="field">
-        <label for="opponent-select">Rival</label>
+        <label for="opponent-select" data-i18n="field.opponent">Rival</label>
         <select id="opponent-select">
-          <option value="">Todos los rivales</option>
+          <option value="" data-i18n="option.allOpponents">Todos los rivales</option>
         </select>
       </div>
     </div>
@@ -616,8 +644,8 @@
     <div class="tiles" id="tiles"></div>
 
     <section id="decklist-section" hidden>
-      <h2>Lista de mazo</h2>
-      <p class="table-legend">
+      <h2 data-i18n="decklist.title">Lista de mazo</h2>
+      <p class="table-legend" data-i18n="decklist.legend">
         Un arquetipo agrupa listas casi idénticas (hasta 6 cartas de diferencia, mismo Chosen
         Champion) para no llenar el desplegable con una entrada por cada ajuste puntual. Si hay
         más de una variante jugada, puedes elegir cuál ver abajo.
@@ -626,9 +654,9 @@
     </section>
 
     <section>
-      <h2>Rendimiento por carta jugada</h2>
+      <h2 data-i18n="cards.sectionTitle">Rendimiento por carta jugada</h2>
       <div id="cards-table" class="table-scroll"></div>
-      <p class="table-legend">
+      <p class="table-legend" data-i18n="cards.legend">
         <strong>Δ</strong> = tu win rate en las partidas donde jugaste esa carta, menos tu win rate en las
         partidas donde no la jugaste. +20% significa que ganas un 20% más a menudo cuando la juegas; -20%
         que jugarla se asocia a más derrotas. Con pocas partidas el número puede salir en 0% o dar saltos
@@ -638,12 +666,12 @@
   </div>
 
   <section class="view" data-view="mulligan">
-    <h2>Simulador de mulligans</h2>
+    <h2 data-i18n="mulligan.title">Simulador de mulligans</h2>
     <div class="dev-notice">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span><strong>En desarrollo:</strong> las sugerencias de mulligan todavía se basan en pocas partidas. Serán más fiables cuanto más juguemos y se acumulen más datos.</span>
+      <span><strong data-i18n="mulligan.devNoticeStrong">En desarrollo:</strong> <span data-i18n="mulligan.devNoticeText">las sugerencias de mulligan todavía se basan en pocas partidas. Serán más fiables cuanto más juguemos y se acumulen más datos.</span></span>
     </div>
-    <p class="table-legend">
+    <p class="table-legend" data-i18n="mulligan.legend">
       Genera una mano de apertura de 4 cartas al azar con tu arquetipo y te sugiere qué cartas (0, 1 o 2 —
       el máximo que deja cambiar el mulligan real) tiene más sentido devolver: por su win rate en concreto
       en este matchup yendo on the play/on the draw, por si su coste la deja varios turnos sin poder
@@ -652,34 +680,34 @@
     </p>
     <div class="controls">
       <div class="field">
-        <label for="mull-legend-select">Tu Legend</label>
+        <label for="mull-legend-select" data-i18n="field.yourLegend">Tu Legend</label>
         <select id="mull-legend-select"></select>
       </div>
       <div class="field">
-        <label for="mull-deck-select">Arquetipo</label>
+        <label for="mull-deck-select" data-i18n="field.archetype">Arquetipo</label>
         <select id="mull-deck-select"></select>
       </div>
       <div class="field">
-        <label for="mull-opponent-select">Rival</label>
+        <label for="mull-opponent-select" data-i18n="field.opponent">Rival</label>
         <select id="mull-opponent-select">
-          <option value="">Todos los rivales</option>
+          <option value="" data-i18n="option.allOpponents">Todos los rivales</option>
         </select>
       </div>
       <div class="field">
-        <label for="mull-side-select">Turno</label>
+        <label for="mull-side-select" data-i18n="field.turn">Turno</label>
         <select id="mull-side-select">
-          <option value="play">On the play (empiezas)</option>
-          <option value="draw">On the draw (vas segundo)</option>
+          <option value="play" data-i18n="option.onThePlayStart">On the play (empiezas)</option>
+          <option value="draw" data-i18n="option.onTheDrawSecond">On the draw (vas segundo)</option>
         </select>
       </div>
     </div>
-    <button id="mull-generate" class="btn-primary" disabled>Generar mano aleatoria</button>
+    <button id="mull-generate" class="btn-primary" disabled data-i18n="mulligan.generateButton">Generar mano aleatoria</button>
     <div id="mulligan-hand"></div>
   </section>
 
   <section class="view" data-view="cards">
-    <h2>Valoración de cartas <span class="count-pill">(sin Runes)</span></h2>
-    <p class="table-legend">
+    <h2><span data-i18n="cardgrades.title">Valoración de cartas</span> <span class="count-pill" data-i18n="cardgrades.countPill">(sin Runes)</span></h2>
+    <p class="table-legend" data-i18n="cardgrades.legend">
       Cada carta jugada, agrupada por dominio de runa y puntuada con una nota (A+ a F) según tu win rate
       cuando la juegas — al estilo de las tablas de 17lands.com para Magic. Dividido por set porque una
       carta puede rendir distinto según el resto del formato disponible en cada uno. Pasa el ratón por
@@ -688,7 +716,7 @@
     </p>
     <div class="controls">
       <div class="field">
-        <label for="grade-legend-select">Legend</label>
+        <label for="grade-legend-select" data-i18n="field.legend">Legend</label>
         <select id="grade-legend-select"></select>
       </div>
     </div>
@@ -697,13 +725,14 @@
   </section>
 
   <section class="view" data-view="matrix">
-    <h2>Matriz de matchups</h2>
+    <h2 data-i18n="matrix.title">Matriz de matchups</h2>
     <p class="table-legend">
-      Cada celda es el win rate de la Legend de esa fila cuando se ha enfrentado a la de esa columna:
-      verde para los matchups que te van bien, rojo para los que te van mal. La columna
-      <strong>OVERALL</strong> resume el win rate total de esa Legend, contra cualquier rival. Cambia de
+      <span data-i18n="matrix.legendPre">Cada celda es el win rate de la Legend de esa fila cuando se ha enfrentado a la de esa columna:
+      verde para los matchups que te van bien, rojo para los que te van mal. La columna</span>
+      <strong data-i18n="matrix.overall">OVERALL</strong>
+      <span data-i18n="matrix.legendPost">resume el win rate total de esa Legend, contra cualquier rival. Cambia de
       season con los botones de abajo, y de "Global" a "On the play"/"On the draw" para ver el
-      matchup solo cuando esa Legend empezó la partida o fue segunda.
+      matchup solo cuando esa Legend empezó la partida o fue segunda.</span>
     </p>
     <div class="set-tabs" id="matrix-season-tabs"></div>
     <div class="set-tabs" id="matrix-side-tabs"></div>
@@ -712,12 +741,12 @@
 
   <div class="view" data-view="tracker">
     <section>
-      <h2>Matchups</h2>
+      <h2 data-i18n="matchupsTable.title">Matchups</h2>
       <div id="matchups-table" class="table-scroll"></div>
     </section>
 
     <section>
-      <h2>Partidas recientes</h2>
+      <h2 data-i18n="matchesTable.title">Partidas recientes</h2>
       <div id="matches-table" class="table-scroll"></div>
     </section>
   </div>
@@ -730,7 +759,291 @@
 const API = location.origin;
 const pct = (v) => (v == null ? "—" : `${(v * 100).toFixed(0)}%`);
 const fmtDelta = (v) => (v == null ? "—" : `${v >= 0 ? "+" : ""}${(v * 100).toFixed(0)}%`);
-const fmtDate = (s) => new Date(s).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+const fmtDate = (s) => new Date(s).toLocaleDateString(lang === "en" ? "en-GB" : "es-ES", { day: "2-digit", month: "short", year: "numeric" });
+
+// --- Idioma (ES por defecto, EN opcional) -------------------------------------------------
+// Todo el texto fijo del HTML lleva data-i18n="clave" y se rellena vía applyI18n(); el texto
+// generado desde JS (tablas, tooltips, razones del mulligan...) llama a t()/tCount() en vez de
+// tener el string suelto. Cambiar de idioma nunca pide datos nuevos al servidor: solo vuelve a
+// pintar con lo que ya está en memoria (allLegends/allMatchups/etc.), salvo lo que dependa de
+// un fetch con `legend`/`deck` como parámetro de query, donde recargar es más simple que cachear
+// cada combinación posible.
+let lang = localStorage.getItem("rbt_lang") === "en" ? "en" : "es";
+
+const I18N = {
+  es: {
+    "header.subtitle": "Estadísticas de Riftbound a partir de tus partidas en tcg-arena.fr",
+    "header.description": "12 Runes graba en segundo plano las partidas de Riftbound que juegas en tcg-arena.fr (con tu permiso en cada una) y las convierte en estadísticas: qué Legends te funcionan mejor, cómo cambia tu win rate según si vas on the play o on the draw, qué cartas concretas están asociadas a más victorias en cada matchup, y el desglose lista a lista cuando pruebas builds distintas con la misma Legend. Cada partida grabada cuenta el doble: el log de la conexión trae completa la identidad de cada carta que se juega, tanto las tuyas como las del rival, así que todas las estadísticas se calculan también desde su lado — por eso pueden aparecer Legends que nunca has jugado tú, pero sí has enfrentado.",
+    "nav.home": "Inicio",
+    "nav.tracker": "Rendimiento y win rate",
+    "nav.mulligan": "Simulador de mulligans",
+    "nav.cards": "Valoración de cartas",
+    "nav.matrix": "Matriz de matchups",
+    "scope.mine": "Mis partidas",
+    "scope.community": "Comunidad",
+    "scope.hint": "Sin identificar: abre el panel desde el icono de la extensión para ver solo tus partidas.",
+    "install.title": "Instalar la extensión",
+    "install.intro": "Todavía no está en la Chrome Web Store, así que se instala en modo desarrollador (tarda un minuto):",
+    "install.step1": "Descarga el .zip y descomprímelo en una carpeta que no vayas a borrar.",
+    "install.step2Pre": "Ve a",
+    "install.step2Post": "y activa \"Modo desarrollador\" (arriba a la derecha).",
+    "install.step3": "Pulsa \"Cargar descomprimida\" y elige esa carpeta.",
+    "install.button": "Descargar extensión (.zip)",
+    "install.hint": "Cuando la actualicemos, repite estos pasos con el zip nuevo.",
+    "install.updateFlag": "Hay una nueva versión. Repite los pasos de instalación.",
+    "home.trackerTitle": "Rendimiento y win rate",
+    "home.trackerDesc": "Estadísticas por Legend, rendimiento de cada carta jugada, matchups y tus partidas recientes — la vista completa de cómo te está yendo.",
+    "home.mulliganTitle": "Simulador de mulligans",
+    "home.mulliganDesc": "Genera una mano de apertura al azar con tu arquetipo y te sugiere qué cartas cambiar en el mulligan — y por qué.",
+    "home.cardsTitle": "Valoración de cartas",
+    "home.cardsDesc": "Todas tus cartas puntuadas por win rate, agrupadas por dominio de runa y por set — al estilo de las tablas de 17lands.com.",
+    "home.matrixTitle": "Matriz de matchups",
+    "home.matrixDesc": "Win rate de cada Legend contra cada una de las demás, coloreado de rojo a verde y con intervalo de confianza — filtrable por season.",
+    "field.yourLegend": "Tu Legend",
+    "field.archetype": "Arquetipo",
+    "field.opponent": "Rival",
+    "field.turn": "Turno",
+    "field.legend": "Legend",
+    "option.allArchetypes": "Todos los arquetipos",
+    "option.allOpponents": "Todos los rivales",
+    "option.allLegends": "Todas las Legends",
+    "option.noChampion": "Sin Chosen Champion",
+    "option.noGamesYet": "Sin partidas todavía",
+    "option.loading": "Cargando…",
+    "option.loadingArchetypes": "Cargando arquetipos…",
+    "option.onThePlayStart": "On the play (empiezas)",
+    "option.onTheDrawSecond": "On the draw (vas segundo)",
+    "loading.generic": "Cargando…",
+    "decklist.title": "Lista de mazo",
+    "decklist.legend": "Un arquetipo agrupa listas casi idénticas (hasta 6 cartas de diferencia, mismo Chosen Champion) para no llenar el desplegable con una entrada por cada ajuste puntual. Si hay más de una variante jugada, puedes elegir cuál ver abajo.",
+    "decklist.variantsTitle": "Variantes de esta build ({n}) — difieren en pocas cartas",
+    "cards.sectionTitle": "Rendimiento por carta jugada",
+    "cards.legend": "Δ = tu win rate en las partidas donde jugaste esa carta, menos tu win rate en las partidas donde no la jugaste. +20% significa que ganas un 20% más a menudo cuando la juegas; -20% que jugarla se asocia a más derrotas. Con pocas partidas el número puede salir en 0% o dar saltos grandes aunque la carta sí importe — hace falta más muestra para que sea fiable.",
+    "cards.empty": "Todavía no hay cartas jugadas registradas para este filtro.",
+    "col.card": "Carta",
+    "col.type": "Tipo",
+    "col.games": "Partidas",
+    "col.wrPlayed": "WR jugada",
+    "col.delta": "Δ",
+    "col.deltaTitle": "Diferencia en puntos porcentuales entre el win rate de las partidas donde jugaste esta carta y el win rate de las partidas donde no la jugaste. +pp = jugarla se asocia a más victorias; -pp = a menos. Con pocas partidas puede dar 0pp o ir a saltos aunque la carta sí importe — hace falta más muestra para que el número sea fiable.",
+    "col.wrOnPlay": "WR on play",
+    "col.wrOnDraw": "WR on draw",
+    "badge.win": "Victoria",
+    "badge.loss": "Derrota",
+    "badge.unknown": "?",
+    "abbr.win": "V",
+    "abbr.loss": "D",
+    "tiles.games": "Partidas",
+    "tiles.winRate": "Win rate",
+    "tiles.onThePlay": "On the play",
+    "tiles.onTheDraw": "On the draw",
+    "matchupsTable.title": "Matchups",
+    "matchupsTable.colYourLegend": "Tu Legend",
+    "matchupsTable.colOpponentLegend": "Legend rival",
+    "matchupsTable.colGames": "Partidas",
+    "matchupsTable.colWinRate": "Win rate",
+    "matchupsTable.empty": "Sin datos todavía.",
+    "matchesTable.title": "Partidas recientes",
+    "matchesTable.colDate": "Fecha",
+    "matchesTable.colResult": "Resultado",
+    "matchesTable.colOpponent": "Rival",
+    "matchesTable.colYourLegend": "Tu Legend",
+    "matchesTable.colOpponentLegend": "Legend rival",
+    "matchesTable.colTurns": "Turnos",
+    "matchesTable.colPlayDraw": "Play/Draw",
+    "matchesTable.empty": "Sin partidas guardadas.",
+    "matchesTable.needContributor": "Abre el panel desde el icono de la extensión (\"Ver panel de estadísticas\") para ver tu propio historial de partidas.",
+    "mulligan.title": "Simulador de mulligans",
+    "mulligan.devNoticeStrong": "En desarrollo:",
+    "mulligan.devNoticeText": "las sugerencias de mulligan todavía se basan en pocas partidas. Serán más fiables cuanto más juguemos y se acumulen más datos.",
+    "mulligan.legend": "Genera una mano de apertura de 4 cartas al azar con tu arquetipo y te sugiere qué cartas (0, 1 o 2 — el máximo que deja cambiar el mulligan real) tiene más sentido devolver: por su win rate en concreto en este matchup yendo on the play/on the draw, por si su coste la deja varios turnos sin poder jugarse frente a las runas que tendrás al empezar, o por si ya tienes otra copia en la mano. Se basa en las partidas grabadas hasta ahora — con poca muestra acierta menos, no es una respuesta exacta.",
+    "mulligan.generateButton": "Generar mano aleatoria",
+    "mulligan.notEnoughCards": "No hay suficientes cartas registradas en esta lista para simular una mano.",
+    "mulligan.suggestOut": "Las cartas en blanco y negro son las que el simulador sugiere devolver en el mulligan — pasa el ratón por encima (de cualquier carta) para ver por qué.",
+    "mulligan.noSuggestion": "El simulador no ve ninguna carta claramente peor que el resto de esta mano: razonable quedártela tal cual.",
+    "mulligan.tagOut": "Cambiar",
+    "mulligan.tagKeep": "Quedarte",
+    "mulligan.reasonOutPrefix": "Cambiarías {card}: ",
+    "mulligan.reasonKeepPrefix": "Te la quedas: ",
+    "mulligan.reasonDuplicate": "ya tienes otra copia de {card} en la mano — rara vez hacen falta las dos nada más empezar",
+    "mulligan.reasonOverCost": "cuesta {cost} y en tu primer turno {side} solo tendrás {runes} runa{runesPlural}, tardará turnos en poder jugarse",
+    "mulligan.reasonWorseWithSide": "su win rate jugándola {side} en este matchup es {pct}, peor que el resto de la mano",
+    "mulligan.reasonWorseGeneral": "su win rate cuando se juega en este matchup es {pct}, peor que el resto de la mano",
+    "mulligan.reasonNoSample": "todavía no hay partidas suficientes con esta carta en este matchup para valorarla mejor",
+    "mulligan.reasonKeepWithSide": "{pct} de win rate jugándola {side} en este matchup",
+    "mulligan.reasonKeepGeneral": "{pct} de win rate cuando se juega en este matchup{delta}",
+    "mulligan.reasonKeepNoBetter": "no hay otra carta en la mano claramente mejor",
+    "mulligan.reasonKeepOverCost": "aunque tarda en jugarse (cuesta {cost}), compensa por su impacto en este matchup",
+    "mulligan.sideOnThePlay": "on the play",
+    "mulligan.sideOnTheDraw": "on the draw",
+    "cardgrades.title": "Valoración de cartas",
+    "cardgrades.countPill": "(sin Runes)",
+    "cardgrades.legend": "Cada carta jugada, agrupada por dominio de runa y puntuada con una nota (A+ a F) según tu win rate cuando la juegas — al estilo de las tablas de 17lands.com para Magic. Dividido por set porque una carta puede rendir distinto según el resto del formato disponible en cada uno. Pasa el ratón por encima de una carta para ver en cuántas partidas se basa la nota — con pocas, puede moverse mucho de una partida a la siguiente.",
+    "cardgrades.allSets": "Todos los sets",
+    "cardgrades.empty": "Todavía no hay cartas jugadas registradas para este filtro.",
+    "cardgrades.reason": "{card}: {pct} de win rate en {n} partida{plural} jugada{plural}.",
+    "matrix.title": "Matriz de matchups",
+    "matrix.legendPre": "Cada celda es el win rate de la Legend de esa fila cuando se ha enfrentado a la de esa columna: verde para los matchups que te van bien, rojo para los que te van mal. La columna",
+    "matrix.legendPost": "resume el win rate total de esa Legend, contra cualquier rival. Cambia de season con los botones de abajo, y de \"Global\" a \"On the play\"/\"On the draw\" para ver el matchup solo cuando esa Legend empezó la partida o fue segunda.",
+    "matrix.overall": "OVERALL",
+    "matrix.empty": "Todavía no hay partidas grabadas en esta season.",
+    "matrix.noSeasons": "Todavía no hay ninguna season registrada. En cuanto grabes una partida, aparece aquí sola.",
+    "matrix.sideGlobal": "Global",
+    "matrix.sideOnThePlay": "On the play",
+    "matrix.sideOnTheDraw": "On the draw",
+    "unit.game": "partida",
+    "unit.games": "partidas",
+    "unit.variant": "variante",
+    "unit.variants": "variantes",
+    "error.loading": "Error cargando datos: {msg}. ¿Está el backend corriendo?",
+  },
+  en: {
+    "header.subtitle": "Riftbound stats from your matches on tcg-arena.fr",
+    "header.description": "12 Runes records, in the background, the Riftbound matches you play on tcg-arena.fr (asking your permission every time) and turns them into stats: which Legends work best for you, how your win rate changes on the play vs. on the draw, which specific cards are tied to more wins in each matchup, and the list-by-list breakdown when you try different builds with the same Legend. Every recorded match counts twice: the connection log carries the full identity of every card played, both yours and your opponent's, so every stat is also computed from their side — that's why Legends you've never played yourself, but have faced, can show up too.",
+    "nav.home": "Home",
+    "nav.tracker": "Performance & win rate",
+    "nav.mulligan": "Mulligan simulator",
+    "nav.cards": "Card ratings",
+    "nav.matrix": "Matchup matrix",
+    "scope.mine": "My games",
+    "scope.community": "Community",
+    "scope.hint": "Not identified: open the panel from the extension's icon to see only your own games.",
+    "install.title": "Install the extension",
+    "install.intro": "Not on the Chrome Web Store yet, so it installs in developer mode (takes a minute):",
+    "install.step1": "Download the .zip and unzip it into a folder you won't delete.",
+    "install.step2Pre": "Go to",
+    "install.step2Post": "and turn on \"Developer mode\" (top right).",
+    "install.step3": "Click \"Load unpacked\" and pick that folder.",
+    "install.button": "Download extension (.zip)",
+    "install.hint": "When we update it, repeat these steps with the new zip.",
+    "install.updateFlag": "A new version is available. Repeat the install steps.",
+    "home.trackerTitle": "Performance & win rate",
+    "home.trackerDesc": "Stats by Legend, per-card performance, matchups, and your recent games — the full picture of how you're doing.",
+    "home.mulliganTitle": "Mulligan simulator",
+    "home.mulliganDesc": "Deals a random opening hand for your archetype and suggests which cards to mulligan — and why.",
+    "home.cardsTitle": "Card ratings",
+    "home.cardsDesc": "All your played cards graded by win rate, grouped by rune domain and by set — 17lands.com style.",
+    "home.matrixTitle": "Matchup matrix",
+    "home.matrixDesc": "Win rate of every Legend against every other one, colored red to green with a confidence interval — filterable by season.",
+    "field.yourLegend": "Your Legend",
+    "field.archetype": "Archetype",
+    "field.opponent": "Opponent",
+    "field.turn": "Turn",
+    "field.legend": "Legend",
+    "option.allArchetypes": "All archetypes",
+    "option.allOpponents": "All opponents",
+    "option.allLegends": "All Legends",
+    "option.noChampion": "No Chosen Champion",
+    "option.noGamesYet": "No games yet",
+    "option.loading": "Loading…",
+    "option.loadingArchetypes": "Loading archetypes…",
+    "option.onThePlayStart": "On the play (you go first)",
+    "option.onTheDrawSecond": "On the draw (you go second)",
+    "loading.generic": "Loading…",
+    "decklist.title": "Decklist",
+    "decklist.legend": "An archetype groups near-identical lists (up to 6 cards apart, same Chosen Champion) so the dropdown doesn't get an entry per tiny tweak. If more than one variant has been played, pick which one to view below.",
+    "decklist.variantsTitle": "Variants of this build ({n}) — differ by a few cards",
+    "cards.sectionTitle": "Performance by card played",
+    "cards.legend": "Δ = your win rate in games where you played that card, minus your win rate in games where you didn't. +20% means you win 20% more often when you play it; -20% means playing it is tied to more losses. With few games the number can sit at 0% or swing a lot even if the card does matter — it needs a bigger sample to be reliable.",
+    "cards.empty": "No played cards recorded yet for this filter.",
+    "col.card": "Card",
+    "col.type": "Type",
+    "col.games": "Games",
+    "col.wrPlayed": "WR played",
+    "col.delta": "Δ",
+    "col.deltaTitle": "Percentage-point difference between your win rate in games where you played this card and your win rate in games where you didn't. +pp = playing it is tied to more wins; -pp = to fewer. With few games it can show 0pp or jump around even if the card does matter — it needs a bigger sample to be reliable.",
+    "col.wrOnPlay": "WR on play",
+    "col.wrOnDraw": "WR on draw",
+    "badge.win": "Win",
+    "badge.loss": "Loss",
+    "badge.unknown": "?",
+    "abbr.win": "W",
+    "abbr.loss": "L",
+    "tiles.games": "Games",
+    "tiles.winRate": "Win rate",
+    "tiles.onThePlay": "On the play",
+    "tiles.onTheDraw": "On the draw",
+    "matchupsTable.title": "Matchups",
+    "matchupsTable.colYourLegend": "Your Legend",
+    "matchupsTable.colOpponentLegend": "Opponent Legend",
+    "matchupsTable.colGames": "Games",
+    "matchupsTable.colWinRate": "Win rate",
+    "matchupsTable.empty": "No data yet.",
+    "matchesTable.title": "Recent games",
+    "matchesTable.colDate": "Date",
+    "matchesTable.colResult": "Result",
+    "matchesTable.colOpponent": "Opponent",
+    "matchesTable.colYourLegend": "Your Legend",
+    "matchesTable.colOpponentLegend": "Opponent Legend",
+    "matchesTable.colTurns": "Turns",
+    "matchesTable.colPlayDraw": "Play/Draw",
+    "matchesTable.empty": "No games saved.",
+    "matchesTable.needContributor": "Open the panel from the extension's icon (\"View stats dashboard\") to see your own game history.",
+    "mulligan.title": "Mulligan simulator",
+    "mulligan.devNoticeStrong": "Work in progress:",
+    "mulligan.devNoticeText": "mulligan suggestions are still based on a small sample of games. They'll get more reliable as we play more and the data builds up.",
+    "mulligan.legend": "Deals a random 4-card opening hand for your archetype and suggests which cards (0, 1, or 2 — the max the real mulligan allows) make the most sense to return: by their win rate specifically in this matchup on the play/on the draw, by whether their cost leaves them stuck unplayable for several turns given the runes you'll have at the start, or by whether you already have another copy in hand. Based on the games recorded so far — with a small sample it's less accurate, not an exact answer.",
+    "mulligan.generateButton": "Generate random hand",
+    "mulligan.notEnoughCards": "Not enough cards recorded in this list to simulate a hand.",
+    "mulligan.suggestOut": "The cards in black and white are the ones the simulator suggests mulliganing — hover over any card to see why.",
+    "mulligan.noSuggestion": "The simulator doesn't see any card clearly worse than the rest of this hand: reasonable to keep it as is.",
+    "mulligan.tagOut": "Mulligan",
+    "mulligan.tagKeep": "Keep",
+    "mulligan.reasonOutPrefix": "You'd mulligan {card}: ",
+    "mulligan.reasonKeepPrefix": "Keep it: ",
+    "mulligan.reasonDuplicate": "you already have another copy of {card} in hand — you rarely need both right at the start",
+    "mulligan.reasonOverCost": "it costs {cost} and on your first turn {side} you'll only have {runes} rune{runesPlural}, so it'll sit unplayable for a few turns",
+    "mulligan.reasonWorseWithSide": "its win rate when played {side} in this matchup is {pct}, worse than the rest of the hand",
+    "mulligan.reasonWorseGeneral": "its win rate when played in this matchup is {pct}, worse than the rest of the hand",
+    "mulligan.reasonNoSample": "there aren't enough games with this card in this matchup yet to rate it better",
+    "mulligan.reasonKeepWithSide": "{pct} win rate when played {side} in this matchup",
+    "mulligan.reasonKeepGeneral": "{pct} win rate when played in this matchup{delta}",
+    "mulligan.reasonKeepNoBetter": "no other card in hand is clearly better",
+    "mulligan.reasonKeepOverCost": "even though it's slow to play (costs {cost}), it earns its keep in this matchup",
+    "mulligan.sideOnThePlay": "on the play",
+    "mulligan.sideOnTheDraw": "on the draw",
+    "cardgrades.title": "Card ratings",
+    "cardgrades.countPill": "(no Runes)",
+    "cardgrades.legend": "Every played card, grouped by rune domain and graded (A+ to F) by your win rate when you play it — 17lands.com style, for Magic. Split by set because a card can perform differently depending on the rest of that set's format. Hover over a card to see how many games the grade is based on — with few games it can swing a lot from one game to the next.",
+    "cardgrades.allSets": "All sets",
+    "cardgrades.empty": "No played cards recorded yet for this filter.",
+    "cardgrades.reason": "{card}: {pct} win rate in {n} game{plural} played.",
+    "matrix.title": "Matchup matrix",
+    "matrix.legendPre": "Each cell is the win rate of that row's Legend when it faced that column's Legend: green for matchups going well for you, red for the ones going badly. The",
+    "matrix.legendPost": "column sums up that Legend's overall win rate, against any opponent. Switch season with the buttons below, and from \"Global\" to \"On the play\"/\"On the draw\" to see the matchup only for when that Legend went first or second.",
+    "matrix.overall": "OVERALL",
+    "matrix.empty": "No games recorded yet for this season.",
+    "matrix.noSeasons": "No season registered yet. As soon as you record a game, it'll show up here on its own.",
+    "matrix.sideGlobal": "Global",
+    "matrix.sideOnThePlay": "On the play",
+    "matrix.sideOnTheDraw": "On the draw",
+    "unit.game": "game",
+    "unit.games": "games",
+    "unit.variant": "variant",
+    "unit.variants": "variants",
+    "error.loading": "Error loading data: {msg}. Is the backend running?",
+  },
+};
+
+function t(key, vars) {
+  const str = I18N[lang]?.[key] ?? I18N.es[key] ?? key;
+  if (!vars) return str;
+  return str.replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ""));
+}
+
+// "{n} partida(s)" / "{n} game(s)": la única forma de pluralizar que necesita esta web.
+function tCount(n, unitKey) {
+  const unit = t(n === 1 ? `unit.${unitKey}` : `unit.${unitKey}s`);
+  return `${n} ${unit}`;
+}
+
+function applyI18n() {
+  document.documentElement.lang = lang;
+  for (const node of document.querySelectorAll("[data-i18n]")) node.textContent = t(node.dataset.i18n);
+  for (const node of document.querySelectorAll("[data-i18n-title]")) node.title = t(node.dataset.i18nTitle);
+  document.getElementById("lang-toggle").textContent = lang === "en" ? "EN" : "ES";
+  document.getElementById("lang-toggle").title = lang === "en" ? "Cambiar a español" : "Switch to English";
+}
 
 let allLegends = [];
 let allMatchups = [];
@@ -792,16 +1105,16 @@ async function getJSON(path) {
 function setLoading(container) {
   if (!container) return;
   container.innerHTML = "";
-  container.appendChild(el("div", { class: "loading-state" }, [el("span", { class: "spinner" }), el("span", { text: "Cargando…" })]));
+  container.appendChild(el("div", { class: "loading-state" }, [el("span", { class: "spinner" }), el("span", { text: t("loading.generic") })]));
 }
 
 // Misma idea para un <select> que se va a repoblar (arquetipo, mazo del simulador...): una
 // única opción deshabilitada en vez de dejarlo con las opciones del filtro anterior.
-function setSelectLoading(select, text = "Cargando…") {
+function setSelectLoading(select, text) {
   if (!select) return;
   select.disabled = true;
   select.innerHTML = "";
-  select.appendChild(el("option", { value: "", text }));
+  select.appendChild(el("option", { value: "", text: text ?? t("loading.generic") }));
 }
 
 function el(tag, attrs = {}, children = []) {
@@ -896,10 +1209,10 @@ function renderTiles(matchup) {
   const tiles = document.getElementById("tiles");
   tiles.innerHTML = "";
   const items = [
-    { label: "Partidas", value: matchup.games, sub: `${matchup.wins}V - ${matchup.losses}D` },
-    { label: "Win rate", value: pct(matchup.winRate) },
-    { label: "On the play", value: pct(matchup.onPlay.winRate), sub: `${matchup.onPlay.games} partidas` },
-    { label: "On the draw", value: pct(matchup.onDraw.winRate), sub: `${matchup.onDraw.games} partidas` },
+    { label: t("tiles.games"), value: matchup.games, sub: `${matchup.wins}${t("abbr.win")} - ${matchup.losses}${t("abbr.loss")}` },
+    { label: t("tiles.winRate"), value: pct(matchup.winRate) },
+    { label: t("tiles.onThePlay"), value: pct(matchup.onPlay.winRate), sub: tCount(matchup.onPlay.games, "game") },
+    { label: t("tiles.onTheDraw"), value: pct(matchup.onDraw.winRate), sub: tCount(matchup.onDraw.games, "game") },
   ];
   for (const item of items) {
     tiles.appendChild(
@@ -913,33 +1226,30 @@ function renderTiles(matchup) {
 }
 
 function resultBadge(result) {
-  const map = { WIN: ["win", "Victoria"], LOSS: ["loss", "Derrota"], UNKNOWN: ["unknown", "?"] };
+  const map = { WIN: ["win", t("badge.win")], LOSS: ["loss", t("badge.loss")], UNKNOWN: ["unknown", t("badge.unknown")] };
   const [cls, label] = map[result] ?? ["unknown", result];
   return el("span", { class: `badge ${cls}`, text: label });
 }
 
-const CARD_COLUMNS = [
-  { key: "cardName", label: "Carta" },
-  { key: "cardType", label: "Tipo" },
-  { key: "gamesPlayed", label: "Partidas", num: true },
-  { key: "winRateWhenPlayed", label: "WR jugada", num: true, fmt: pct },
-  {
-    key: "delta",
-    label: "Δ",
-    num: true,
-    fmt: fmtDelta,
-    delta: true,
-    title: "Diferencia en puntos porcentuales entre el win rate de las partidas donde jugaste esta carta y el win rate de las partidas donde no la jugaste. +pp = jugarla se asocia a más victorias; -pp = a menos. Con pocas partidas puede dar 0pp o ir a saltos aunque la carta sí importe — hace falta más muestra para que el número sea fiable.",
-  },
-  { key: "onPlayWinRate", label: "WR on play", num: true, fmt: pct },
-  { key: "onDrawWinRate", label: "WR on draw", num: true, fmt: pct },
-];
+// Función en vez de const: los labels/title dependen de `lang`, y esta tabla se puede volver a
+// pintar (cambio de idioma, de orden al hacer click en una columna) sin recargar nada del backend.
+function getCardColumns() {
+  return [
+    { key: "cardName", label: t("col.card") },
+    { key: "cardType", label: t("col.type") },
+    { key: "gamesPlayed", label: t("col.games"), num: true },
+    { key: "winRateWhenPlayed", label: t("col.wrPlayed"), num: true, fmt: pct },
+    { key: "delta", label: t("col.delta"), num: true, fmt: fmtDelta, delta: true, title: t("col.deltaTitle") },
+    { key: "onPlayWinRate", label: t("col.wrOnPlay"), num: true, fmt: pct },
+    { key: "onDrawWinRate", label: t("col.wrOnDraw"), num: true, fmt: pct },
+  ];
+}
 
 function renderCardsTable(cards) {
   const container = document.getElementById("cards-table");
   container.innerHTML = "";
   if (cards.length === 0) {
-    container.appendChild(el("div", { class: "empty", text: "Todavía no hay cartas jugadas registradas para este filtro." }));
+    container.appendChild(el("div", { class: "empty", text: t("cards.empty") }));
     return;
   }
 
@@ -958,9 +1268,10 @@ function renderCardsTable(cards) {
     return sortState.dir * (av - bv);
   });
 
+  const columns = getCardColumns();
   const table = el("table");
   const thead = el("tr");
-  for (const col of CARD_COLUMNS) {
+  for (const col of columns) {
     const th = el("th", { class: col.num ? "num" : "" });
     if (col.title) th.title = col.title;
     th.textContent = col.label + (sortState.key === col.key ? (sortState.dir === 1 ? " ▲" : " ▼") : "");
@@ -976,7 +1287,7 @@ function renderCardsTable(cards) {
   const tbody = el("tbody");
   for (const row of rows) {
     const tr = el("tr");
-    for (const col of CARD_COLUMNS) {
+    for (const col of columns) {
       const raw = row[col.key];
       const text = col.fmt ? col.fmt(raw) : raw ?? "—";
       const td = el("td", { class: col.num ? "num" : "" });
@@ -995,16 +1306,16 @@ function renderMatchupsTable(matchups) {
   const container = document.getElementById("matchups-table");
   container.innerHTML = "";
   if (matchups.length === 0) {
-    container.appendChild(el("div", { class: "empty", text: "Sin datos todavía." }));
+    container.appendChild(el("div", { class: "empty", text: t("matchupsTable.empty") }));
     return;
   }
   const table = el("table");
   table.appendChild(
     el("thead", {}, el("tr", {}, [
-      el("th", { text: "Tu Legend" }),
-      el("th", { text: "Legend rival" }),
-      el("th", { class: "num", text: "Partidas" }),
-      el("th", { class: "num", text: "Win rate" }),
+      el("th", { text: t("matchupsTable.colYourLegend") }),
+      el("th", { text: t("matchupsTable.colOpponentLegend") }),
+      el("th", { class: "num", text: t("matchupsTable.colGames") }),
+      el("th", { class: "num", text: t("matchupsTable.colWinRate") }),
     ]))
   );
   const tbody = el("tbody");
@@ -1026,19 +1337,19 @@ function renderMatchesTable(matches) {
   const container = document.getElementById("matches-table");
   container.innerHTML = "";
   if (matches.length === 0) {
-    container.appendChild(el("div", { class: "empty", text: "Sin partidas guardadas." }));
+    container.appendChild(el("div", { class: "empty", text: t("matchesTable.empty") }));
     return;
   }
   const table = el("table");
   table.appendChild(
     el("thead", {}, el("tr", {}, [
-      el("th", { text: "Fecha" }),
-      el("th", { text: "Resultado" }),
-      el("th", { text: "Rival" }),
-      el("th", { text: "Tu Legend" }),
-      el("th", { text: "Legend rival" }),
-      el("th", { class: "num", text: "Turnos" }),
-      el("th", { text: "Play/Draw" }),
+      el("th", { text: t("matchesTable.colDate") }),
+      el("th", { text: t("matchesTable.colResult") }),
+      el("th", { text: t("matchesTable.colOpponent") }),
+      el("th", { text: t("matchesTable.colYourLegend") }),
+      el("th", { text: t("matchesTable.colOpponentLegend") }),
+      el("th", { class: "num", text: t("matchesTable.colTurns") }),
+      el("th", { text: t("matchesTable.colPlayDraw") }),
     ]))
   );
   const tbody = el("tbody");
@@ -1097,13 +1408,13 @@ function renderDeckVariant(cluster, variant) {
   if (cluster.variantCount > 1) {
     const box = el("div", { class: "deck-variants" });
     box.appendChild(
-      el("h3", { text: `Variantes de esta build (${cluster.variantCount}) — difieren en pocas cartas` })
+      el("h3", { text: t("decklist.variantsTitle", { n: cluster.variantCount }) })
     );
     const chips = el("div", { class: "variant-chips" });
     for (const v of cluster.variants) {
       const chip = el("button", {
         class: "variant-chip" + (v.signature === variant.signature ? " active" : ""),
-        text: `${v.games} partidas (${pct(v.winRate)})`,
+        text: `${tCount(v.games, "game")} (${pct(v.winRate)})`,
       });
       chip.addEventListener("click", () => renderDeckVariant(cluster, v));
       chips.appendChild(chip);
@@ -1166,7 +1477,8 @@ async function loadForSelection() {
 
 function populateOpponentOptions(legend) {
   const select = document.getElementById("opponent-select");
-  select.innerHTML = '<option value="">Todos los rivales</option>';
+  select.innerHTML = "";
+  select.appendChild(el("option", { value: "", text: t("option.allOpponents") }));
   const opponents = allMatchups
     .filter((m) => m.localLegend === legend)
     .sort((a, b) => b.games - a.games);
@@ -1177,13 +1489,14 @@ function populateOpponentOptions(legend) {
 
 async function populateDeckOptions(legend) {
   const select = document.getElementById("deck-select");
-  setSelectLoading(select, "Cargando arquetipos…");
+  setSelectLoading(select, t("option.loadingArchetypes"));
   allDecksForLegend = await getJSON(`/stats/decks?${scopedParams({ legend })}`);
   select.disabled = false;
-  select.innerHTML = '<option value="">Todos los arquetipos</option>';
+  select.innerHTML = "";
+  select.appendChild(el("option", { value: "", text: t("option.allArchetypes") }));
   for (const d of allDecksForLegend) {
-    const variantSuffix = d.variantCount > 1 ? ` · ${d.variantCount} variantes` : "";
-    const label = `${d.championName ?? "Sin Chosen Champion"} — ${d.games} partidas (${pct(d.winRate)})${variantSuffix}`;
+    const variantSuffix = d.variantCount > 1 ? ` · ${tCount(d.variantCount, "variant")}` : "";
+    const label = `${d.championName ?? t("option.noChampion")} — ${tCount(d.games, "game")} (${pct(d.winRate)})${variantSuffix}`;
     select.appendChild(el("option", { value: d.clusterId, text: label }));
   }
 }
@@ -1206,20 +1519,21 @@ async function populateMulliganDeckOptions(legend) {
     select.innerHTML = "";
     return [];
   }
-  setSelectLoading(select, "Cargando arquetipos…");
+  setSelectLoading(select, t("option.loadingArchetypes"));
   const clusters = await getJSON(`/stats/decks?${scopedParams({ legend })}`);
   select.disabled = false;
   select.innerHTML = "";
   for (const c of clusters) {
-    const variantSuffix = c.variantCount > 1 ? ` · ${c.variantCount} variantes` : "";
-    select.appendChild(el("option", { value: c.clusterId, text: `${c.championName ?? "Sin Chosen Champion"} — ${c.games} partidas${variantSuffix}` }));
+    const variantSuffix = c.variantCount > 1 ? ` · ${tCount(c.variantCount, "variant")}` : "";
+    select.appendChild(el("option", { value: c.clusterId, text: `${c.championName ?? t("option.noChampion")} — ${tCount(c.games, "game")}${variantSuffix}` }));
   }
   return clusters;
 }
 
 function populateMulliganOpponentOptions(legend) {
   const select = document.getElementById("mull-opponent-select");
-  select.innerHTML = '<option value="">Todos los rivales</option>';
+  select.innerHTML = "";
+  select.appendChild(el("option", { value: "", text: t("option.allOpponents") }));
   const opponents = allMatchups.filter((m) => m.localLegend === legend).sort((a, b) => b.games - a.games);
   for (const m of opponents) select.appendChild(el("option", { value: m.opponentLegend, text: `${m.opponentLegend} (${m.games})` }));
 }
@@ -1232,7 +1546,7 @@ async function initMulliganSection() {
   document.getElementById("mulligan-hand").innerHTML = "";
 
   if (allLegends.length === 0) {
-    legendSelect.appendChild(el("option", { value: "", text: "Sin partidas todavía" }));
+    legendSelect.appendChild(el("option", { value: "", text: t("option.noGamesYet") }));
     document.getElementById("mull-deck-select").innerHTML = "";
     generateBtn.disabled = true;
     mullClusters = [];
@@ -1263,31 +1577,31 @@ function scoreMulliganCard(card, statsById, side, duplicateIndex) {
 }
 
 function mulliganOutReason(c, side) {
-  const sideLabel = side === "play" ? "on the play" : "on the draw";
+  const sideLabel = t(side === "play" ? "mulligan.sideOnThePlay" : "mulligan.sideOnTheDraw");
   const parts = [];
-  if (c.duplicateIndex > 0) parts.push(`ya tienes otra copia de ${c.card.name} en la mano — rara vez hacen falta las dos nada más empezar`);
+  if (c.duplicateIndex > 0) parts.push(t("mulligan.reasonDuplicate", { card: c.card.name }));
   if (c.overCost > 0) {
     const runes = RUNE_TURN_ONE[side];
-    parts.push(`cuesta ${c.card.cost} y en tu primer turno ${sideLabel} solo tendrás ${runes} runa${runes > 1 ? "s" : ""}, tardará turnos en poder jugarse`);
+    parts.push(t("mulligan.reasonOverCost", { cost: c.card.cost, side: sideLabel, runes, runesPlural: runes > 1 ? "s" : "" }));
   }
-  if (c.hasSideSample) parts.push(`su win rate jugándola ${sideLabel} en este matchup es ${pct(c.sideStats.winRate)}, peor que el resto de la mano`);
-  else if (c.stats?.winRateWhenPlayed != null) parts.push(`su win rate cuando se juega en este matchup es ${pct(c.stats.winRateWhenPlayed)}, peor que el resto de la mano`);
-  else parts.push("todavía no hay partidas suficientes con esta carta en este matchup para valorarla mejor");
-  return `Cambiarías ${c.card.name}: ${parts.join("; ")}.`;
+  if (c.hasSideSample) parts.push(t("mulligan.reasonWorseWithSide", { side: sideLabel, pct: pct(c.sideStats.winRate) }));
+  else if (c.stats?.winRateWhenPlayed != null) parts.push(t("mulligan.reasonWorseGeneral", { pct: pct(c.stats.winRateWhenPlayed) }));
+  else parts.push(t("mulligan.reasonNoSample"));
+  return `${t("mulligan.reasonOutPrefix", { card: c.card.name })}${parts.join("; ")}.`;
 }
 
 function mulliganKeepReason(c, side) {
-  const sideLabel = side === "play" ? "on the play" : "on the draw";
+  const sideLabel = t(side === "play" ? "mulligan.sideOnThePlay" : "mulligan.sideOnTheDraw");
   const parts = [];
   // El motivo mostrado tiene que citar el MISMO número que usó el cálculo del score
   // (`baseValue`), nunca otro distinto (p. ej. el Δ), o el texto contradeciría la decisión.
-  if (c.hasSideSample) parts.push(`${pct(c.sideStats.winRate)} de win rate jugándola ${sideLabel} en este matchup`);
+  if (c.hasSideSample) parts.push(t("mulligan.reasonKeepWithSide", { side: sideLabel, pct: pct(c.sideStats.winRate) }));
   else if (c.stats?.winRateWhenPlayed != null) {
     const deltaSuffix = c.stats.delta != null ? ` (Δ ${fmtDelta(c.stats.delta)})` : "";
-    parts.push(`${pct(c.stats.winRateWhenPlayed)} de win rate cuando se juega en este matchup${deltaSuffix}`);
-  } else parts.push("no hay otra carta en la mano claramente mejor");
-  if (c.overCost > 0) parts.push(`aunque tarda en jugarse (cuesta ${c.card.cost}), compensa por su impacto en este matchup`);
-  return `Te la quedas: ${parts.join("; ")}.`;
+    parts.push(t("mulligan.reasonKeepGeneral", { pct: pct(c.stats.winRateWhenPlayed), delta: deltaSuffix }));
+  } else parts.push(t("mulligan.reasonKeepNoBetter"));
+  if (c.overCost > 0) parts.push(t("mulligan.reasonKeepOverCost", { cost: c.card.cost }));
+  return `${t("mulligan.reasonKeepPrefix")}${parts.join("; ")}.`;
 }
 
 function mulliganCardCell(c, side) {
@@ -1298,7 +1612,7 @@ function mulliganCardCell(c, side) {
     : el("div", { class: "thumb placeholder", text: card.name ?? "?" });
   cell.appendChild(thumb);
   cell.appendChild(el("div", { class: "cname", text: card.name ?? card.id }));
-  cell.appendChild(el("div", { class: "mull-tag", text: c.out ? "Cambiar" : "Quedarte" }));
+  cell.appendChild(el("div", { class: "mull-tag", text: c.out ? t("mulligan.tagOut") : t("mulligan.tagKeep") }));
   if (card.image) markCardHover(cell, card.image);
   cell.dataset.reason = c.out ? mulliganOutReason(c, side) : mulliganKeepReason(c, side);
   return cell;
@@ -1334,9 +1648,7 @@ function renderMulliganHand(hand, statsById, side) {
   container.appendChild(
     el("p", {
       class: "table-legend",
-      text: outCount > 0
-        ? "Las cartas en blanco y negro son las que el simulador sugiere devolver en el mulligan — pasa el ratón por encima (de cualquier carta) para ver por qué."
-        : "El simulador no ve ninguna carta claramente peor que el resto de esta mano: razonable quedártela tal cual.",
+      text: outCount > 0 ? t("mulligan.suggestOut") : t("mulligan.noSuggestion"),
     })
   );
 }
@@ -1360,7 +1672,7 @@ async function generateMulliganHand() {
   const container = document.getElementById("mulligan-hand");
   if (pool.length < 4) {
     container.innerHTML = "";
-    container.appendChild(el("div", { class: "empty", text: "No hay suficientes cartas registradas en esta lista para simular una mano." }));
+    container.appendChild(el("div", { class: "empty", text: t("mulligan.notEnoughCards") }));
     return;
   }
 
@@ -1412,7 +1724,7 @@ function cardGradeTile(c) {
   tile.appendChild(el("div", { class: "name", text: c.cardName ?? c.cardId }));
   tile.appendChild(el("div", { class: `pct ${gradeTier(c.grade)}`, text: pct(c.winRateWhenPlayed) }));
   if (c.cardImage) markCardHover(tile, c.cardImage);
-  tile.dataset.reason = `${c.cardName ?? c.cardId}: ${pct(c.winRateWhenPlayed)} de win rate en ${c.gamesPlayed} partida${c.gamesPlayed === 1 ? "" : "s"} jugada${c.gamesPlayed === 1 ? "" : "s"}.`;
+  tile.dataset.reason = t("cardgrades.reason", { card: c.cardName ?? c.cardId, pct: pct(c.winRateWhenPlayed), n: c.gamesPlayed, plural: c.gamesPlayed === 1 ? "" : "s" });
   return tile;
 }
 
@@ -1420,7 +1732,7 @@ function renderCardGradesGrid(cards) {
   const container = document.getElementById("card-grades-grid");
   container.innerHTML = "";
   if (cards.length === 0) {
-    container.appendChild(el("div", { class: "empty", text: "Todavía no hay cartas jugadas registradas para este filtro." }));
+    container.appendChild(el("div", { class: "empty", text: t("cardgrades.empty") }));
     return;
   }
 
@@ -1462,7 +1774,7 @@ function renderCardGradesForFilter() {
 function populateGradeSetTabs() {
   const container = document.getElementById("grade-set-tabs");
   container.innerHTML = "";
-  const allBtn = el("button", { class: "btn-secondary" + (cardGradesSetFilter === "all" ? " active" : ""), text: "Todos los sets" });
+  const allBtn = el("button", { class: "btn-secondary" + (cardGradesSetFilter === "all" ? " active" : ""), text: t("cardgrades.allSets") });
   allBtn.addEventListener("click", () => {
     cardGradesSetFilter = "all";
     populateGradeSetTabs();
@@ -1495,7 +1807,7 @@ function populateCardGradesLegendOptions() {
   const select = document.getElementById("grade-legend-select");
   const previous = select.value;
   select.innerHTML = "";
-  select.appendChild(el("option", { value: "", text: "Todas las Legends" }));
+  select.appendChild(el("option", { value: "", text: t("option.allLegends") }));
   for (const l of allLegends) select.appendChild(el("option", { value: l.legendName, text: `${l.legendName} (${l.games})` }));
   if (previous && [...select.options].some((o) => o.value === previous)) select.value = previous;
 }
@@ -1504,11 +1816,13 @@ function populateCardGradesLegendOptions() {
 let matrixSeasons = [];
 let matrixSeasonSelected = null;
 let matrixSideSelected = "all"; // "all" | "play" | "draw"
-const MATRIX_SIDE_OPTIONS = [
-  { value: "all", label: "Global" },
-  { value: "play", label: "On the play" },
-  { value: "draw", label: "On the draw" },
-];
+function getMatrixSideOptions() {
+  return [
+    { value: "all", label: t("matrix.sideGlobal") },
+    { value: "play", label: t("matrix.sideOnThePlay") },
+    { value: "draw", label: t("matrix.sideOnTheDraw") },
+  ];
+}
 
 // 0% -> rojo, 50% -> ámbar, 100% -> verde. Mismo criterio de lectura rápida que la referencia.
 function matrixColor(winRate) {
@@ -1527,7 +1841,7 @@ function matrixCellNode(cell, extraClass) {
     wrap.appendChild(el("div", { class: "range", text: `${(cell.ciLow * 100).toFixed(0)}% - ${(cell.ciHigh * 100).toFixed(0)}%` }));
   }
   wrap.appendChild(el("div", { class: "pct", text: pct(cell.winRate) }));
-  wrap.appendChild(el("div", { class: "n", text: `${cell.games} partida${cell.games === 1 ? "" : "s"}` }));
+  wrap.appendChild(el("div", { class: "n", text: tCount(cell.games, "game") }));
   return wrap;
 }
 
@@ -1535,7 +1849,7 @@ function renderMatchupMatrix(data) {
   const container = document.getElementById("matchup-matrix-grid");
   container.innerHTML = "";
   if (data.legends.length === 0) {
-    container.appendChild(el("div", { class: "empty", text: "Todavía no hay partidas grabadas en esta season." }));
+    container.appendChild(el("div", { class: "empty", text: t("matrix.empty") }));
     return;
   }
 
@@ -1546,7 +1860,7 @@ function renderMatchupMatrix(data) {
   grid.style.setProperty("--legend-count", legends.length);
 
   grid.appendChild(el("div", { class: "matrix-head" }));
-  grid.appendChild(el("div", { class: "matrix-head", text: "OVERALL" }));
+  grid.appendChild(el("div", { class: "matrix-head", text: t("matrix.overall") }));
   for (const l of legends) {
     const head = el("div", { class: "matrix-head" });
     if (l.image) {
@@ -1606,7 +1920,7 @@ function populateMatrixSeasonTabs() {
 function populateMatrixSideTabs() {
   const container = document.getElementById("matrix-side-tabs");
   container.innerHTML = "";
-  for (const opt of MATRIX_SIDE_OPTIONS) {
+  for (const opt of getMatrixSideOptions()) {
     const btn = el("button", { class: "btn-secondary" + (opt.value === matrixSideSelected ? " active" : ""), text: opt.label });
     btn.addEventListener("click", () => {
       if (opt.value === matrixSideSelected) return;
@@ -1629,7 +1943,7 @@ async function initMatrixSection() {
     container.appendChild(
       el("div", {
         class: "empty",
-        text: "Todavía no hay ninguna season registrada. En cuanto grabes una partida, aparece aquí sola.",
+        text: t("matrix.noSeasons"),
       })
     );
     return;
@@ -1649,7 +1963,7 @@ async function loadRecentMatches() {
     container.appendChild(
       el("div", {
         class: "empty",
-        text: 'Abre el panel desde el icono de la extensión ("Ver panel de estadísticas") para ver tu propio historial de partidas.',
+        text: t("matchesTable.needContributor"),
       })
     );
     return;
@@ -1666,7 +1980,7 @@ function updateScopeUI() {
   if (!myContributorId) {
     mineBtn.disabled = true;
     scope = "all";
-    hint.textContent = 'Sin identificar: abre el panel desde el icono de la extensión para ver solo tus partidas.';
+    hint.textContent = t("scope.hint");
   } else {
     mineBtn.disabled = false;
     hint.textContent = "";
@@ -1681,7 +1995,7 @@ async function refreshLegendSelect() {
   legendSelect.disabled = false;
   legendSelect.innerHTML = "";
   if (allLegends.length === 0) {
-    legendSelect.appendChild(el("option", { value: "", text: "Sin partidas todavía" }));
+    legendSelect.appendChild(el("option", { value: "", text: t("option.noGamesYet") }));
     document.getElementById("tiles").innerHTML = "";
     renderCardsTable([]);
     renderMatchupsTable([]);
@@ -1694,7 +2008,7 @@ async function refreshLegendSelect() {
 }
 
 async function reloadAll() {
-  setSelectLoading(document.getElementById("legend-select"), "Cargando…");
+  setSelectLoading(document.getElementById("legend-select"), t("option.loading"));
   setLoading(document.getElementById("matchups-table"));
   const [legends, matchups] = await Promise.all([getJSON(`/stats/legends?${scopedParams()}`), getJSON(`/stats/matchups?${scopedParams()}`)]);
   allLegends = legends;
@@ -1711,6 +2025,44 @@ async function reloadAll() {
   populateOpponentOptions(legendSelect.value);
   await populateDeckOptions(legendSelect.value);
   await loadForSelection();
+}
+
+// --- Tema claro/oscuro -----------------------------------------------------------------
+// Sin nada guardado, el tema sigue la preferencia del sistema (ver CSS: @media
+// prefers-color-scheme). En cuanto el usuario toca el botón, esa elección se guarda y manda
+// siempre a partir de ahí, en esta pestaña y en las siguientes visitas.
+const SUN_ICON = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>';
+const MOON_ICON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+
+function currentEffectiveTheme() {
+  const saved = localStorage.getItem("rbt_theme");
+  if (saved === "light" || saved === "dark") return saved;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(saved) {
+  if (saved) document.documentElement.setAttribute("data-theme", saved);
+  else document.documentElement.removeAttribute("data-theme");
+  const effective = currentEffectiveTheme();
+  document.getElementById("theme-icon").innerHTML = effective === "dark" ? SUN_ICON : MOON_ICON;
+}
+
+function toggleTheme() {
+  const next = currentEffectiveTheme() === "dark" ? "light" : "dark";
+  localStorage.setItem("rbt_theme", next);
+  applyTheme(next);
+}
+
+// Cambiar de idioma nunca pide nada nuevo al servidor "en frío": vuelve a pintar el texto
+// fijo (applyI18n) y luego relanza exactamente las mismas funciones que ya repintan todo lo
+// dinámico al cambiar de scope (reloadAll/loadRecentMatches), así no hay que mantener un
+// segundo camino de renderizado solo para esto.
+async function toggleLanguage() {
+  lang = lang === "en" ? "es" : "en";
+  localStorage.setItem("rbt_lang", lang);
+  applyI18n();
+  await reloadAll();
+  await loadRecentMatches();
 }
 
 // El content script `version-badge.js` de la extensión (si está instalada y es reciente,
@@ -1739,6 +2091,11 @@ async function checkExtensionVersion() {
 }
 
 async function init() {
+  applyTheme(localStorage.getItem("rbt_theme"));
+  document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
+  applyI18n();
+  document.getElementById("lang-toggle").addEventListener("click", toggleLanguage);
+
   checkExtensionVersion();
   showView(currentView());
   updateScopeUI();
@@ -1774,7 +2131,7 @@ async function init() {
 }
 
 init().catch((err) => {
-  document.querySelector("main").appendChild(el("div", { class: "empty", text: `Error cargando datos: ${err.message}. ¿Está el backend corriendo?` }));
+  document.querySelector("main").appendChild(el("div", { class: "empty", text: t("error.loading", { msg: err.message }) }));
 });
 </script>
 </body>
