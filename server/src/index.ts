@@ -362,7 +362,7 @@ app.get("/stats/seasons", async (request) => {
 });
 
 app.get("/stats/matchup-matrix", async (request, reply) => {
-  const query = request.query as { season?: string; contributor?: string; deck?: string };
+  const query = request.query as { season?: string; contributor?: string; deck?: string; onThePlay?: string };
   if (!query.season) return reply.code(400).send({ error: "season query param is required" });
 
   const matches = await prisma.match.findMany({
@@ -376,6 +376,11 @@ app.get("/stats/matchup-matrix", async (request, reply) => {
   });
 
   let perspectives = bothPerspectives(matches).filter((p) => p.legendName != null && p.opponentLegendName != null);
+  // Cada perspectiva ya trae su propio onThePlay invertido cuando corresponde (ver
+  // toPerspective en stats.ts), así que filtrar aquí es correcto para las dos: "On the play"
+  // enseña la matriz solo con las partidas donde la Legend de la FILA empezó la partida.
+  if (query.onThePlay === "play") perspectives = perspectives.filter((p) => p.onThePlay === true);
+  else if (query.onThePlay === "draw") perspectives = perspectives.filter((p) => p.onThePlay === false);
   if (query.deck) {
     perspectives = perspectives.filter((p) => {
       if (!p.localDeck) return false;

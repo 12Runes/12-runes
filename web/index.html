@@ -68,6 +68,16 @@
   * { box-sizing: border-box; }
   @keyframes fadeInUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-state {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 40px 16px; color: var(--text-muted); font-size: 13px; animation: fadeIn 0.15s ease both;
+  }
+  .spinner {
+    width: 16px; height: 16px; flex: none; border-radius: 50%;
+    border: 2px solid var(--border); border-top-color: var(--series-1);
+    animation: spin 0.7s linear infinite;
+  }
   @media (prefers-reduced-motion: reduce) {
     * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
   }
@@ -692,9 +702,11 @@
       Cada celda es el win rate de la Legend de esa fila cuando se ha enfrentado a la de esa columna:
       verde para los matchups que te van bien, rojo para los que te van mal. La columna
       <strong>OVERALL</strong> resume el win rate total de esa Legend, contra cualquier rival. Cambia de
-      season con los botones de abajo.
+      season con los botones de abajo, y de "Global" a "On the play"/"On the draw" para ver el
+      matchup solo cuando esa Legend empezó la partida o fue segunda.
     </p>
     <div class="set-tabs" id="matrix-season-tabs"></div>
+    <div class="set-tabs" id="matrix-side-tabs"></div>
     <div id="matchup-matrix-grid"></div>
   </section>
 
@@ -772,6 +784,24 @@ async function getJSON(path) {
   const res = await fetch(API + path);
   if (!res.ok) throw new Error(`${path} -> HTTP ${res.status}`);
   return res.json();
+}
+
+// Servidor gratuito -> a veces tarda. Se llama justo antes de cada `getJSON` que vaya a
+// repintar `container`, para que nunca se vea la tabla/lista vacía o con datos del filtro
+// anterior mientras llega la respuesta nueva.
+function setLoading(container) {
+  if (!container) return;
+  container.innerHTML = "";
+  container.appendChild(el("div", { class: "loading-state" }, [el("span", { class: "spinner" }), el("span", { text: "Cargando…" })]));
+}
+
+// Misma idea para un <select> que se va a repoblar (arquetipo, mazo del simulador...): una
+// única opción deshabilitada en vez de dejarlo con las opciones del filtro anterior.
+function setSelectLoading(select, text = "Cargando…") {
+  if (!select) return;
+  select.disabled = true;
+  select.innerHTML = "";
+  select.appendChild(el("option", { value: "", text }));
 }
 
 function el(tag, attrs = {}, children = []) {
@@ -1122,6 +1152,8 @@ async function loadForSelection() {
   const qs = scopedParams({ legend });
   if (opponent) qs.set("opponent", opponent);
   if (deckSig) qs.set("deck", deckSig);
+  setLoading(document.getElementById("tiles"));
+  setLoading(document.getElementById("cards-table"));
   const data = await getJSON(`/stats/cards?${qs}`);
   renderTiles(data.matchup);
   renderCardsTable(data.cards);
@@ -1145,8 +1177,10 @@ function populateOpponentOptions(legend) {
 
 async function populateDeckOptions(legend) {
   const select = document.getElementById("deck-select");
-  select.innerHTML = '<option value="">Todos los arquetipos</option>';
+  setSelectLoading(select, "Cargando arquetipos…");
   allDecksForLegend = await getJSON(`/stats/decks?${scopedParams({ legend })}`);
+  select.disabled = false;
+  select.innerHTML = '<option value="">Todos los arquetipos</option>';
   for (const d of allDecksForLegend) {
     const variantSuffix = d.variantCount > 1 ? ` · ${d.variantCount} variantes` : "";
     const label = `${d.championName ?? "Sin Chosen Champion"} — ${d.games} partidas (${pct(d.winRate)})${variantSuffix}`;
@@ -1168,9 +1202,14 @@ const MULLIGAN_MIN_SIDE_SAMPLE = 3;
 
 async function populateMulliganDeckOptions(legend) {
   const select = document.getElementById("mull-deck-select");
-  select.innerHTML = "";
-  if (!legend) return [];
+  if (!legend) {
+    select.innerHTML = "";
+    return [];
+  }
+  setSelectLoading(select, "Cargando arquetipos…");
   const clusters = await getJSON(`/stats/decks?${scopedParams({ legend })}`);
+  select.disabled = false;
+  select.innerHTML = "";
   for (const c of clusters) {
     const variantSuffix = c.variantCount > 1 ? ` · ${c.variantCount} variantes` : "";
     select.appendChild(el("option", { value: c.clusterId, text: `${c.championName ?? "Sin Chosen Champion"} — ${c.games} partidas${variantSuffix}` }));
@@ -1327,6 +1366,7 @@ async function generateMulliganHand() {
 
   const qs = scopedParams({ legend, deck: clusterId });
   if (opponent) qs.set("opponent", opponent);
+  setLoading(container);
   const { cards: cardStats } = await getJSON(`/stats/cards?${qs}`);
   const statsById = new Map(cardStats.map((c) => [c.cardId, c]));
 
@@ -1442,6 +1482,7 @@ function populateGradeSetTabs() {
 
 async function loadCardGrades(legend) {
   const qs = scopedParams(legend ? { legend } : {});
+  setLoading(document.getElementById("card-grades-grid"));
   const data = await getJSON(`/stats/card-grades?${qs}`);
   allCardGrades = data.cards;
   cardGradesSets = data.sets;
@@ -1462,6 +1503,12 @@ function populateCardGradesLegendOptions() {
 // --- Matriz de matchups (estilo blitz.gg/u.gg) ----------------------------------------------
 let matrixSeasons = [];
 let matrixSeasonSelected = null;
+let matrixSideSelected = "all"; // "all" | "play" | "draw"
+const MATRIX_SIDE_OPTIONS = [
+  { value: "all", label: "Global" },
+  { value: "play", label: "On the play" },
+  { value: "draw", label: "On the draw" },
+];
 
 // 0% -> rojo, 50% -> ámbar, 100% -> verde. Mismo criterio de lectura rápida que la referencia.
 function matrixColor(winRate) {
@@ -1534,7 +1581,10 @@ function renderMatchupMatrix(data) {
 }
 
 async function loadMatchupMatrix(season) {
-  const data = await getJSON(`/stats/matchup-matrix?${scopedParams({ season })}`);
+  const params = { season };
+  if (matrixSideSelected !== "all") params.onThePlay = matrixSideSelected;
+  setLoading(document.getElementById("matchup-matrix-grid"));
+  const data = await getJSON(`/stats/matchup-matrix?${scopedParams(params)}`);
   renderMatchupMatrix(data);
 }
 
@@ -1544,6 +1594,7 @@ function populateMatrixSeasonTabs() {
   for (const s of matrixSeasons) {
     const btn = el("button", { class: "btn-secondary" + (s.code === matrixSeasonSelected ? " active" : ""), text: s.name });
     btn.addEventListener("click", () => {
+      if (s.code === matrixSeasonSelected) return;
       matrixSeasonSelected = s.code;
       populateMatrixSeasonTabs();
       loadMatchupMatrix(matrixSeasonSelected);
@@ -1552,11 +1603,28 @@ function populateMatrixSeasonTabs() {
   }
 }
 
+function populateMatrixSideTabs() {
+  const container = document.getElementById("matrix-side-tabs");
+  container.innerHTML = "";
+  for (const opt of MATRIX_SIDE_OPTIONS) {
+    const btn = el("button", { class: "btn-secondary" + (opt.value === matrixSideSelected ? " active" : ""), text: opt.label });
+    btn.addEventListener("click", () => {
+      if (opt.value === matrixSideSelected) return;
+      matrixSideSelected = opt.value;
+      populateMatrixSideTabs();
+      loadMatchupMatrix(matrixSeasonSelected);
+    });
+    container.appendChild(btn);
+  }
+}
+
 async function initMatrixSection() {
+  setLoading(document.getElementById("matchup-matrix-grid"));
   matrixSeasons = await getJSON(`/stats/seasons?${scopedParams()}`);
   const container = document.getElementById("matchup-matrix-grid");
   if (matrixSeasons.length === 0) {
     document.getElementById("matrix-season-tabs").innerHTML = "";
+    document.getElementById("matrix-side-tabs").innerHTML = "";
     container.innerHTML = "";
     container.appendChild(
       el("div", {
@@ -1570,6 +1638,7 @@ async function initMatrixSection() {
     matrixSeasonSelected = matrixSeasons[0].code;
   }
   populateMatrixSeasonTabs();
+  populateMatrixSideTabs();
   await loadMatchupMatrix(matrixSeasonSelected);
 }
 
@@ -1585,6 +1654,7 @@ async function loadRecentMatches() {
     );
     return;
   }
+  setLoading(container);
   const matches = await getJSON(`/matches?${new URLSearchParams({ limit: 100, contributor: myContributorId })}`);
   renderMatchesTable(matches);
 }
@@ -1608,6 +1678,7 @@ function updateScopeUI() {
 async function refreshLegendSelect() {
   const legendSelect = document.getElementById("legend-select");
   const previous = legendSelect.value;
+  legendSelect.disabled = false;
   legendSelect.innerHTML = "";
   if (allLegends.length === 0) {
     legendSelect.appendChild(el("option", { value: "", text: "Sin partidas todavía" }));
@@ -1623,6 +1694,8 @@ async function refreshLegendSelect() {
 }
 
 async function reloadAll() {
+  setSelectLoading(document.getElementById("legend-select"), "Cargando…");
+  setLoading(document.getElementById("matchups-table"));
   const [legends, matchups] = await Promise.all([getJSON(`/stats/legends?${scopedParams()}`), getJSON(`/stats/matchups?${scopedParams()}`)]);
   allLegends = legends;
   allMatchups = matchups;
