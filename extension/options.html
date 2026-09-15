@@ -9,6 +9,11 @@
       input { width: 100%; padding: 8px; font-size: 13px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 6px; }
       button { margin-top: 10px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
       #status { margin-left: 8px; font-size: 12px; color: #16a34a; }
+      .field { margin-top: 22px; }
+      #contributorId { color: #4b5563; background: #f3f4f6; }
+      .hint { font-size: 12px; color: #6b7280; margin-top: 6px; line-height: 1.4; }
+      footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 12px; }
+      footer a { color: #4b5563; }
     </style>
   </head>
   <body>
@@ -17,6 +22,19 @@
     <input id="backendUrl" type="url" placeholder="https://one2-runes.onrender.com" />
     <button id="save">Guardar</button>
     <span id="status"></span>
+
+    <div class="field">
+      <label for="contributorId">Tu identificador anónimo</label>
+      <input id="contributorId" type="text" readonly />
+      <p class="hint">
+        No es tu cuenta de tcg-arena.fr ni de Google, es un id aleatorio generado en este
+        navegador. Inclúyelo si escribes para pedir que se borren tus partidas grabadas.
+      </p>
+    </div>
+
+    <footer>
+      <a href="https://one2-runes.onrender.com/privacy.html" target="_blank" rel="noopener">Política de privacidad</a>
+    </footer>
     <script src="options.js"></script>
   </body>
 </html>
