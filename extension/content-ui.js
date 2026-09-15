@@ -19,6 +19,13 @@
   let minimized = false;
   let dragStart = null; // { x, y, left, top }
   let dragMoved = false;
+  // Solo se pasa a coordenadas left/top absolutas (abandonando el anclaje top/right) tras un
+  // arrastre real. `host.style.left` NO sirve para detectar "todavía sin arrastrar": con
+  // `style.all = "initial"` puesto más abajo, cada longhand (incluido `left`) se lee como la
+  // cadena "initial" en vez de "", así que un `=== ""` ahí nunca es cierto y el clamp de más
+  // abajo se disparaba también en el primer render, fijando `left:0` y rompiendo el anclaje a la
+  // derecha — la causa real de que el piloto apareciera arriba a la izquierda.
+  let hasDragged = false;
 
   function ensureHost() {
     if (host) return;
@@ -28,12 +35,17 @@
     host.style.top = "16px";
     host.style.right = "16px";
     host.style.zIndex = "2147483647";
+    // El host en sí nunca debe capturar clics: solo lo que de verdad se ve (`.panel`/`.pilot`,
+    // con pointer-events:auto explícito) debe ser interactivo. Sin esto, si el host llegara a
+    // ocupar una caja más ancha de lo visible (como pasaba con el bug del `left:0` de arriba),
+    // esa zona invisible se comía los clics de la propia UI de TCG Arena por debajo.
+    host.style.pointerEvents = "none";
     document.documentElement.appendChild(host);
 
     const shadow = host.attachShadow({ mode: "open" });
     const style = document.createElement("style");
     style.textContent = `
-      .panel { font-family: system-ui, sans-serif; background:#111827; color:#f9fafb; border-radius:10px; padding:14px 16px; width:300px; max-height:calc(100vh - 32px); overflow-y:auto; box-sizing:border-box; box-shadow:0 8px 24px rgba(0,0,0,.35); display:flex; flex-direction:column; gap:10px; }
+      .panel { font-family: system-ui, sans-serif; background:#111827; color:#f9fafb; border-radius:10px; padding:14px 16px; width:300px; max-height:calc(100vh - 32px); overflow-y:auto; box-sizing:border-box; box-shadow:0 8px 24px rgba(0,0,0,.35); display:flex; flex-direction:column; gap:10px; pointer-events:auto; user-select:none; }
       .title { font-weight:600; font-size:13px; display:flex; align-items:center; gap:6px; }
       .dot { width:8px;height:8px;border-radius:50%; background:#22c55e; flex-shrink:0; }
       .text { font-size:12px; color:#d1d5db; line-height:1.4; }
@@ -52,7 +64,7 @@
       .divider { border:none; border-top:1px solid #374151; margin:0; }
       .badge-row { display:flex; align-items:center; justify-content:space-between; gap:6px; }
       .minimize-btn { flex:0 0 auto; width:22px; padding:0; font-size:14px; line-height:1; background:#374151; color:#f9fafb; }
-      .pilot { width:26px; height:26px; border-radius:50%; background:#111827; border:2px solid #22c55e; box-shadow:0 4px 12px rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; cursor:grab; user-select:none; }
+      .pilot { width:26px; height:26px; border-radius:50%; background:#111827; border:2px solid #22c55e; box-shadow:0 4px 12px rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; cursor:grab; user-select:none; pointer-events:auto; }
       .pilot:active { cursor:grabbing; }
       .pilot .pilot-dot { width:10px; height:10px; border-radius:50%; background:#22c55e; }
     `;
@@ -63,6 +75,7 @@
 
   function clearPanel() {
     minimized = false;
+    hasDragged = false;
     if (!host) return;
     host.remove();
     host = null;
@@ -89,14 +102,25 @@
   // Arrastrar el piloto: se mueve con left/top absolutos (abandonando el anclaje inicial por
   // top/right) para poder llevarlo a cualquier esquina. Un click simple (sin mover el ratón más
   // de unos pocos px) no cuenta como arrastre y reabre el panel completo en `stopDrag`.
+  //
+  // Usa Pointer Events + setPointerCapture en vez de listeners de mousemove/mouseup en
+  // `document`: así el arrastre queda ligado al propio elemento del piloto y el navegador se
+  // encarga de seguir entregándole los eventos pase lo que pase (aunque el cursor salga de su
+  // caja), liberándolo solo automáticamente en el pointerup/pointercancel. Con el enfoque
+  // anterior (listeners globales en document en fase de captura), si por lo que sea el pointerup
+  // no llegaba a dispararse, esos listeners se quedaban enganchados para siempre interceptando
+  // cualquier click futuro en toda la página — justo el "bloqueo de la UI de TCG Arena" reportado.
   function startDrag(e) {
     e.preventDefault();
     e.stopPropagation();
+    const pilotEl = e.currentTarget;
+    pilotEl.setPointerCapture(e.pointerId);
     dragMoved = false;
     const rect = host.getBoundingClientRect();
     dragStart = { x: e.clientX, y: e.clientY, left: rect.left, top: rect.top };
-    document.addEventListener("mousemove", onDrag, true);
-    document.addEventListener("mouseup", stopDrag, true);
+    pilotEl.addEventListener("pointermove", onDrag);
+    pilotEl.addEventListener("pointerup", stopDrag);
+    pilotEl.addEventListener("pointercancel", stopDrag);
   }
 
   function onDrag(e) {
@@ -105,8 +129,7 @@
     const dy = e.clientY - dragStart.y;
     if (!dragMoved && Math.hypot(dx, dy) < 4) return;
     dragMoved = true;
-    e.preventDefault();
-    e.stopPropagation();
+    hasDragged = true;
     const rect = host.getBoundingClientRect();
     const maxLeft = Math.max(0, window.innerWidth - rect.width);
     const maxTop = Math.max(0, window.innerHeight - rect.height);
@@ -116,8 +139,10 @@
   }
 
   function stopDrag(e) {
-    document.removeEventListener("mousemove", onDrag, true);
-    document.removeEventListener("mouseup", stopDrag, true);
+    const pilotEl = e.currentTarget;
+    pilotEl.removeEventListener("pointermove", onDrag);
+    pilotEl.removeEventListener("pointerup", stopDrag);
+    pilotEl.removeEventListener("pointercancel", stopDrag);
     const wasClick = !dragMoved;
     dragStart = null;
     dragMoved = false;
@@ -128,10 +153,15 @@
   }
 
   // Si el piloto se arrastró cerca de un borde, al desplegar el panel completo (300px de ancho)
-  // este podría salirse de la pantalla; lo recolocamos dentro del viewport sin tocar la posición
-  // si nunca se arrastró (sigue anclado por top/right, que ya siempre cabe).
+  // este podría salirse de la pantalla; lo recolocamos dentro del viewport. Solo tiene sentido
+  // tocar left/top si YA hubo un arrastre real (`hasDragged`): si nunca se arrastró, el host
+  // sigue anclado por top/right (que ya siempre cabe) y no hay que tocarlo. Ojo: NO valía mirar
+  // `host.style.left === ""` para detectar "nunca arrastrado" — con `style.all = "initial"` cada
+  // longhand (incluido left) se lee como la cadena "initial", nunca como "", así que esa
+  // comprobación no servía y el clamp se disparaba ya en el primer render, fijando `left:0` y
+  // rompiendo el anclaje a la derecha.
   function clampHostToViewport() {
-    if (!host || host.style.left === "") return;
+    if (!host || !hasDragged) return;
     const rect = host.getBoundingClientRect();
     const maxLeft = Math.max(0, window.innerWidth - rect.width);
     const maxTop = Math.max(0, window.innerHeight - rect.height);
@@ -174,7 +204,7 @@
     // escondido en el piloto.
     if (minimized && pendingGames.length === 0 && currentGameNumber != null) {
       root.innerHTML = `<div class="pilot" id="rbt-pilot" title="Grabando · arrastra para moverlo o haz clic para abrir"><span class="pilot-dot"></span></div>`;
-      root.querySelector("#rbt-pilot").addEventListener("mousedown", startDrag);
+      root.querySelector("#rbt-pilot").addEventListener("pointerdown", startDrag);
       clampHostToViewport();
       return;
     }
