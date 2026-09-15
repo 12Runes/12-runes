@@ -157,12 +157,15 @@
   }
   .install-card.update-available::before { background: var(--good); }
   .install-card.update-available .btn-primary { background: var(--good); }
+  /* La visibilidad del aviso depende solo de esta clase (nunca de JS tocando `hidden`
+     directamente), para que barra/botón/aviso no puedan quedar desincronizados entre sí. */
   .update-flag {
-    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
+    display: none; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
     color: var(--good-text); background: color-mix(in srgb, var(--good) 16%, var(--surface-1));
     border: 1px solid color-mix(in srgb, var(--good) 45%, var(--border)); border-radius: 999px;
     padding: 4px 12px; margin: 0 0 10px;
   }
+  .install-card.update-available .update-flag { display: inline-flex; }
   .install-card-text { flex: 1 1 320px; min-width: 0; }
   .install-card-text h2 { margin: 0 0 6px; }
   .install-card-text p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0 0 10px; }
@@ -516,7 +519,7 @@
   <div class="view" data-view="home" id="view-home">
     <div class="install-card" id="install-card">
       <div class="install-card-text">
-        <div class="update-flag" id="update-flag" hidden>Hay una nueva versión. Repite los pasos de instalación.</div>
+        <div class="update-flag" id="update-flag">Hay una nueva versión. Repite los pasos de instalación.</div>
         <h2>Instalar la extensión</h2>
         <p>
           Todavía no está en la Chrome Web Store, así que se instala en modo desarrollador (tarda un minuto):
@@ -1642,18 +1645,23 @@ async function reloadAll() {
 // atributo no sabemos si es porque no está instalada o porque es una versión previa a este
 // mismo aviso — en ambos casos no decimos nada (el botón por defecto ya cubre "instálala").
 // Solo avisamos cuando SÍ hay una versión detectada y no coincide con la última publicada.
+//
+// Barra/botón/aviso dependen todos de esta única clase en #install-card (ver CSS de
+// `.update-available`), puesta con `toggle` en vez de solo `add`: así una comprobación que
+// encuentra todo al día siempre puede deshacer el aviso de una comprobación anterior, en vez
+// de quedarse encendido para siempre en cuanto se activa una sola vez en esa carga de página.
 async function checkExtensionVersion() {
+  const card = document.getElementById("install-card");
   try {
     const installed = document.documentElement.dataset.rbtExtensionVersion;
-    if (!installed) return;
-    const latest = (await (await fetch("downloads/version.txt", { cache: "no-store" })).text()).trim();
-    if (latest && installed !== latest) {
-      document.getElementById("install-card")?.classList.add("update-available");
-      const flag = document.getElementById("update-flag");
-      if (flag) flag.hidden = false;
+    if (!installed) {
+      card?.classList.remove("update-available");
+      return;
     }
+    const latest = (await (await fetch("downloads/version.txt", { cache: "no-store" })).text()).trim();
+    card?.classList.toggle("update-available", Boolean(latest) && installed !== latest);
   } catch {
-    // sin conexión al archivo de versión: no bloquea el resto de la página
+    // sin conexión al archivo de versión: dejamos el estado tal como estaba
   }
 }
 
