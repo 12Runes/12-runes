@@ -62,6 +62,20 @@
 
     pc.addEventListener("datachannel", (evt) => instrumentChannel(evt.channel, "remote"));
 
+    // Cuando la partida se queda colgada (p. ej. TCG Arena muestra "Timeout") la conexión puede
+    // quedar en un estado muerto sin que el propio RTCDataChannel llegue a disparar su evento
+    // "close" — el canal en sí puede seguir "abierto" a efectos del navegador aunque ya no vaya
+    // a pasar nada más. "failed"/"closed" a nivel de RTCPeerConnection sí son un indicador fiable
+    // de que la conexión ha terminado de verdad (a diferencia de "disconnected", que puede
+    // recuperarse solo tras un corte breve de red, así que ese no cuenta). Se trata exactamente
+    // igual que un cierre normal del canal: mismo mensaje "datachannel-close" que ya se
+    // gestionaba, sin necesidad de un camino nuevo en el service worker.
+    pc.addEventListener("connectionstatechange", () => {
+      if (pc.connectionState === "failed" || pc.connectionState === "closed") {
+        post("datachannel-close", { origin: "connection-state", reason: pc.connectionState });
+      }
+    });
+
     return pc;
   }
   PatchedRTCPeerConnection.prototype = OriginalRTCPeerConnection.prototype;

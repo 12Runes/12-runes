@@ -89,6 +89,8 @@ const PERSPECTIVE_SELECT = {
   events: true,
   localDeck: true,
   opponentDeck: true,
+  localBattlefields: true,
+  opponentBattlefields: true,
   localLegendName: true,
   opponentLegendName: true,
   startedAt: true,
@@ -130,6 +132,8 @@ app.post("/matches", async (request, reply) => {
     season: typeof body.season === "string" ? body.season : null,
     localDeck: body.localDeck ? JSON.stringify(body.localDeck) : null,
     opponentDeck: body.opponentDeck ? JSON.stringify(body.opponentDeck) : null,
+    localBattlefields: Array.isArray(body.localBattlefields) && body.localBattlefields.length > 0 ? JSON.stringify(body.localBattlefields) : null,
+    opponentBattlefields: Array.isArray(body.opponentBattlefields) && body.opponentBattlefields.length > 0 ? JSON.stringify(body.opponentBattlefields) : null,
     events: JSON.stringify(body.events ?? []),
     matchFingerprint,
   };

@@ -54,6 +54,12 @@ export function invertResult(result: string): string {
   return "UNKNOWN";
 }
 
+export interface BattlefieldEntry {
+  cardId: string | null;
+  cardName: string | null;
+  cardImage: string | null;
+}
+
 export interface RawMatchForPerspective {
   id: string;
   result: string;
@@ -63,9 +69,21 @@ export interface RawMatchForPerspective {
   events: string;
   localDeck: string | null;
   opponentDeck: string | null;
+  localBattlefields: string | null;
+  opponentBattlefields: string | null;
   localLegendName: string | null;
   opponentLegendName: string | null;
   startedAt: Date;
+}
+
+function parseBattlefields(raw: string | null): BattlefieldEntry[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 // Superconjunto de los campos que piden computeCardStats/computeCardGrades/computeDeckGroups —
@@ -78,6 +96,7 @@ export interface PerspectiveMatch {
   localPlayerId: string | null;
   events: string;
   localDeck: string | null;
+  battlefields: BattlefieldEntry[];
   startedAt: Date;
   legendName: string | null;
   opponentLegendName: string | null;
@@ -92,6 +111,7 @@ export function toPerspective(m: RawMatchForPerspective, side: Perspective): Per
       localPlayerId: m.localPlayerId,
       events: m.events,
       localDeck: m.localDeck,
+      battlefields: parseBattlefields(m.localBattlefields),
       startedAt: m.startedAt,
       legendName: m.localLegendName,
       opponentLegendName: m.opponentLegendName,
@@ -106,6 +126,7 @@ export function toPerspective(m: RawMatchForPerspective, side: Perspective): Per
     localPlayerId: m.opponentPlayerId,
     events: m.events,
     localDeck: m.opponentDeck,
+    battlefields: parseBattlefields(m.opponentBattlefields),
     startedAt: m.startedAt,
     legendName: m.opponentLegendName,
     opponentLegendName: m.localLegendName,
@@ -690,6 +711,15 @@ export interface MatchupMatrixLegend {
   ciHigh: number | null;
 }
 
+export interface MatchupMatrixCellBattlefield {
+  cardName: string;
+  cardImage: string | null;
+  games: number;
+  wins: number;
+  losses: number;
+  winRate: number | null;
+}
+
 export interface MatchupMatrixCell {
   row: string;
   col: string;
@@ -699,11 +729,18 @@ export interface MatchupMatrixCell {
   winRate: number | null;
   ciLow: number | null;
   ciHigh: number | null;
+  // El battlefield que llevaba la Legend de la fila en cada una de esas partidas (el propio,
+  // no el del rival — para responder "con qué battlefield me ha ido bien/mal este matchup").
+  // Una partida con más de un battlefield en juego cuenta en cada uno. Solo tiene sentido
+  // filtrado por on the play/on the draw (ver README del hover en la web); en la vista Global
+  // se calcula igual pero mezclaría partidas muy distintas entre sí.
+  battlefields: MatchupMatrixCellBattlefield[];
 }
 
 export function computeMatchupMatrix(perspectives: PerspectiveMatch[]): { legends: MatchupMatrixLegend[]; cells: MatchupMatrixCell[] } {
   const legendTotals = new Map<string, { wins: number; losses: number; image: string | null }>();
-  const cellTotals = new Map<string, { wins: number; losses: number }>();
+  type CellTotal = { wins: number; losses: number; battlefields: Map<string, { cardImage: string | null; wins: number; losses: number }> };
+  const cellTotals = new Map<string, CellTotal>();
 
   for (const p of perspectives) {
     if (!p.legendName || !p.opponentLegendName) continue;
@@ -722,10 +759,18 @@ export function computeMatchupMatrix(perspectives: PerspectiveMatch[]): { legend
     }
 
     const key = `${p.legendName}__${p.opponentLegendName}`;
-    if (!cellTotals.has(key)) cellTotals.set(key, { wins: 0, losses: 0 });
+    if (!cellTotals.has(key)) cellTotals.set(key, { wins: 0, losses: 0, battlefields: new Map() });
     const ct = cellTotals.get(key)!;
     if (p.result === "WIN") ct.wins++;
     else if (p.result === "LOSS") ct.losses++;
+
+    for (const bf of p.battlefields) {
+      if (!bf.cardName) continue;
+      if (!ct.battlefields.has(bf.cardName)) ct.battlefields.set(bf.cardName, { cardImage: bf.cardImage, wins: 0, losses: 0 });
+      const bfTotal = ct.battlefields.get(bf.cardName)!;
+      if (p.result === "WIN") bfTotal.wins++;
+      else if (p.result === "LOSS") bfTotal.losses++;
+    }
   }
 
   const legends = Array.from(legendTotals.entries())
@@ -749,6 +794,16 @@ export function computeMatchupMatrix(perspectives: PerspectiveMatch[]): { legend
     const row = key.slice(0, sep);
     const col = key.slice(sep + 2);
     const ci = wilsonInterval(t.wins, t.losses);
+    const battlefields = Array.from(t.battlefields.entries())
+      .map(([cardName, b]): MatchupMatrixCellBattlefield => ({
+        cardName,
+        cardImage: b.cardImage,
+        games: b.wins + b.losses,
+        wins: b.wins,
+        losses: b.losses,
+        winRate: winLoss(b.wins, b.losses),
+      }))
+      .sort((a, b) => b.games - a.games);
     return {
       row,
       col,
@@ -758,6 +813,7 @@ export function computeMatchupMatrix(perspectives: PerspectiveMatch[]): { legend
       winRate: winLoss(t.wins, t.losses),
       ciLow: ci?.low ?? null,
       ciHigh: ci?.high ?? null,
+      battlefields,
     };
   });
 

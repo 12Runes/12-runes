@@ -4,8 +4,9 @@
 //
 // Formas de payload de GAME_DATA vistas: decklist, playerData, newToHistory,
 // currentPlayer+turnCount, endTurnInfo, revealed, hostCardZonesOrder, cardsLinks,
-// stackCardAccept, isTyping, ping. Solo las primeras cinco son relevantes para reconstruir
-// una partida; el resto son estado de tablero/UI que no necesitamos para el tracker.
+// stackCardAccept, isTyping, ping. De ahí, relevantes para reconstruir una partida: las cinco
+// primeras (`playerData` incluye además `visibleCards`, de donde sale qué battlefield está en
+// juego — ver `extractBattlefields`); el resto es estado de tablero/UI que no necesitamos.
 export function classifyEnvelope(value, direction) {
   if (!value || typeof value !== "object" || value.type !== "GAME_DATA") return { kind: "ignore" };
 
@@ -24,6 +25,7 @@ export function classifyEnvelope(value, direction) {
       pseudo: profile.pseudo ?? null,
       playerId: profile.playerId ?? null,
       isEliminated: pd.isEliminated ?? null,
+      battlefields: extractBattlefields(pd.visibleCards),
     };
   }
   if ("newToHistory" in payload) {
@@ -43,6 +45,29 @@ export function classifyEnvelope(value, direction) {
     return { kind: "game-options", isRestart: payload.gameOptions?.isRestart === true };
   }
   return { kind: "ignore" };
+}
+
+// `playerData.visibleCards` trae, entre todas las cartas visibles de la partida (mano, mazo,
+// zonas...), la carta que está actualmente en la zona "Battlefields" — con `owner` (el id de
+// partida del jugador, el mismo que usa `newToHistory.playerId`/`.player`, así que se cruza con
+// `resolveGamePlayerIds` en background.js) y los datos de la carta en sí. Puede haber más de
+// un battlefield en juego a la vez o cambiar a lo largo de la partida (p. ej. si se revela uno
+// nuevo), así que se devuelven todos los que aparezcan en este mensaje, no solo el primero.
+function extractBattlefields(visibleCards) {
+  if (!Array.isArray(visibleCards)) return [];
+  const out = [];
+  for (const c of visibleCards) {
+    if (c?.position?.section !== "Battlefields") continue;
+    const cardData = c.cardData ?? {};
+    out.push({
+      id: c.id ?? null,
+      owner: c.owner ?? null,
+      cardId: cardData.id ?? null,
+      cardName: cardData.name?.en ?? cardData.face?.front?.name?.en ?? null,
+      cardImage: cardData.face?.front?.image?.en ?? null,
+    });
+  }
+  return out;
 }
 
 // Orden cronológico de sets/expansiones (el último es el más reciente). Cada carta del

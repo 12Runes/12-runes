@@ -107,6 +107,11 @@ function applyClassified(state, c) {
         if (c.pseudo) state.opponentPseudo = c.pseudo;
         if (c.isEliminated != null) state.opponentEliminated = c.isEliminated;
       }
+      for (const bf of c.battlefields ?? []) {
+        if (!bf.owner || !bf.id) continue;
+        const list = (state.match.battlefieldsByOwner[bf.owner] ??= []);
+        if (!list.some((b) => b.id === bf.id)) list.push(bf);
+      }
       break;
     }
     case "history": {
@@ -166,6 +171,13 @@ function computeOnThePlay(state, localGameId, opponentGameId) {
   return null;
 }
 
+// Solo el nombre/imagen de la carta llegan al registro final — `id` (instancia) y `owner`
+// (id de partida del dueño) eran solo necesarios para agrupar mientras se jugaba.
+function pickBattlefields(state, gameId) {
+  const list = gameId ? state.match.battlefieldsByOwner[gameId] : null;
+  return (list ?? []).map(({ cardId, cardName, cardImage }) => ({ cardId, cardName, cardImage }));
+}
+
 function buildMatchRecord(state, result) {
   const { localId, opponentId } = resolveGamePlayerIds(state);
   return {
@@ -186,6 +198,8 @@ function buildMatchRecord(state, result) {
     season: state.match.localDeck?.season ?? state.match.opponentDeck?.season ?? null,
     localDeck: state.match.localDeck,
     opponentDeck: state.match.opponentDeck,
+    localBattlefields: pickBattlefields(state, localId),
+    opponentBattlefields: pickBattlefields(state, opponentId),
     events: state.match.events,
   };
 }
@@ -200,6 +214,11 @@ function freshGame(previousMatch) {
     localDeck: previousMatch?.localDeck ?? null,
     opponentDeck: previousMatch?.opponentDeck ?? null,
     events: [],
+    // { [ownerId]: [{id, cardId, cardName, cardImage}, ...] } — se resetea cada partida (a
+    // diferencia del mazo, el battlefield en juego sí puede cambiar de un game al siguiente).
+    // La clave es el id de partida del dueño (ver `resolveGamePlayerIds`), no "local"/"opponent"
+    // todavía — eso se resuelve al construir el registro final, igual que el resto de ids.
+    battlefieldsByOwner: {},
   };
 }
 
@@ -414,13 +433,10 @@ async function onChannelClose(tabId) {
     return;
   }
 
-  // Red de seguridad para estados que no deberían darse en el flujo normal (p. ej. la conexión
-  // se cierra dos veces, o queda algo huérfano de una versión anterior). Antes esto subía las
-  // partidas pendientes como resultado desconocido; ahora, igual que "Descartar partida", nada
-  // se sube sin que el usuario haya pulsado Gané/Perdí — se descartan sin más.
-  if (state.pendingSaves.length > 0) {
-    await clearState(tabId);
-  }
+  // "closed" (ya se gestionó una vez — ahora puede llegar un cierre por dos caminos distintos,
+  // ver `connectionstatechange` en main-world-hook.js, así que esto SÍ puede pasar en el flujo
+  // normal) o "idle": no hay nada pendiente de hacer, y sobre todo no hay que tocar
+  // `pendingSaves` — ya tiene lo que tiene que tener, esperando a que el usuario conteste.
 }
 
 async function handleConsent(tabId, answer) {
@@ -523,6 +539,9 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg.type === "consent-response") runExclusive(tabId, () => handleConsent(tabId, msg.answer));
   else if (msg.type === "discard-match") runExclusive(tabId, () => handleDiscard(tabId, msg.pendingId));
   else if (msg.type === "confirm-series-game") runExclusive(tabId, () => handleConfirmSeriesGame(tabId, msg.pendingId, msg.result));
+  // Botón manual "La partida ya ha terminado" (ver content-ui.js): mismo camino que un cierre
+  // de canal normal, por si el automático (evento del canal + connectionstatechange) no llega.
+  else if (msg.type === "force-finalize") runExclusive(tabId, () => onChannelClose(tabId));
 });
 
 // Si la pestaña se cierra con partidas de la serie sin confirmar, ya no hay a quién

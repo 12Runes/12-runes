@@ -125,9 +125,14 @@
       )
       .join("");
 
+    // El botón de abajo es la red de seguridad si, tras un "Timeout" de TCG Arena, la conexión
+    // se queda colgada sin que llegue ningún aviso automático (ver `connectionstatechange` en
+    // main-world-hook.js — cubre lo detectable a nivel de protocolo, pero por si acaso): permite
+    // forzar el aviso de Gané/Perdí/Descartar a mano en vez de quedarse grabando para siempre.
     const recordingHtml =
       currentGameNumber != null
-        ? `<div class="badge"><span class="dot"></span> Grabando Game ${currentGameNumber}…</div>`
+        ? `<div class="badge"><span class="dot"></span> Grabando Game ${currentGameNumber}…</div>
+           <button class="secondary" id="rbt-force-finalize">La partida ya ha terminado</button>`
         : "";
 
     root.innerHTML = `
@@ -156,6 +161,8 @@
         renderLive();
       });
     });
+    const forceBtn = root.querySelector("#rbt-force-finalize");
+    if (forceBtn) forceBtn.addEventListener("click", () => send({ type: "force-finalize" }));
   }
 
   // Al cerrarse la conexión (fin de la serie), el service worker manda de golpe TODAS las

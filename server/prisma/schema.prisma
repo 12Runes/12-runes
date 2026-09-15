@@ -52,6 +52,13 @@ model Match {
   opponentDeck String?
   events       String
 
+  // Battlefield(s) en juego de cada lado durante esta partida concreta (viene de
+  // `playerData.visibleCards`, no del mazo — el mazo trae el pool completo de candidatos, esto
+  // es cuál se jugó de verdad). Array de {cardId, cardName, cardImage} serializado; puede haber
+  // más de uno. Null en partidas grabadas antes de esta función.
+  localBattlefields    String?
+  opponentBattlefields String?
+
   // Huella de la partida real (hash del contenido de `events` que viene del propio motor del
   // juego: id/playerId/timestamp de cada jugada — igual para los dos jugadores, a diferencia
   // de `seriesId`/`startedAt` que cada instalación genera por su cuenta). Si los dos jugadores
