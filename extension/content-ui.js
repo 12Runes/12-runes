@@ -12,6 +12,14 @@
   let currentGameNumber = null;
   let pendingGames = []; // { pendingId, finishedGameNumber, guessedResult, summary }
 
+  // El indicador de grabación se minimiza solo a un "piloto" (punto arrastrable) en cuanto
+  // empieza a grabar, porque el panel completo tapa UI propia de TCG Arena. Si hay alguna
+  // partida pendiente de Gané/Perdí/Descartar, el panel se fuerza a expandido igualmente (eso
+  // sí necesita tu atención); `minimized` solo decide qué pasa cuando no hay nada pendiente.
+  let minimized = false;
+  let dragStart = null; // { x, y, left, top }
+  let dragMoved = false;
+
   function ensureHost() {
     if (host) return;
     host = document.createElement("div");
@@ -42,6 +50,11 @@
       .badge { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; }
       .pending-card { border:1px solid #374151; border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px; }
       .divider { border:none; border-top:1px solid #374151; margin:0; }
+      .badge-row { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+      .minimize-btn { flex:0 0 auto; width:22px; padding:0; font-size:14px; line-height:1; background:#374151; color:#f9fafb; }
+      .pilot { width:26px; height:26px; border-radius:50%; background:#111827; border:2px solid #22c55e; box-shadow:0 4px 12px rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; cursor:grab; user-select:none; }
+      .pilot:active { cursor:grabbing; }
+      .pilot .pilot-dot { width:10px; height:10px; border-radius:50%; background:#22c55e; }
     `;
     shadow.appendChild(style);
     root = document.createElement("div");
@@ -49,6 +62,7 @@
   }
 
   function clearPanel() {
+    minimized = false;
     if (!host) return;
     host.remove();
     host = null;
@@ -72,8 +86,62 @@
     return lines.join(" · ");
   }
 
+  // Arrastrar el piloto: se mueve con left/top absolutos (abandonando el anclaje inicial por
+  // top/right) para poder llevarlo a cualquier esquina. Un click simple (sin mover el ratón más
+  // de unos pocos px) no cuenta como arrastre y reabre el panel completo en `stopDrag`.
+  function startDrag(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragMoved = false;
+    const rect = host.getBoundingClientRect();
+    dragStart = { x: e.clientX, y: e.clientY, left: rect.left, top: rect.top };
+    document.addEventListener("mousemove", onDrag, true);
+    document.addEventListener("mouseup", stopDrag, true);
+  }
+
+  function onDrag(e) {
+    if (!dragStart) return;
+    const dx = e.clientX - dragStart.x;
+    const dy = e.clientY - dragStart.y;
+    if (!dragMoved && Math.hypot(dx, dy) < 4) return;
+    dragMoved = true;
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = host.getBoundingClientRect();
+    const maxLeft = Math.max(0, window.innerWidth - rect.width);
+    const maxTop = Math.max(0, window.innerHeight - rect.height);
+    host.style.left = `${Math.min(Math.max(0, dragStart.left + dx), maxLeft)}px`;
+    host.style.top = `${Math.min(Math.max(0, dragStart.top + dy), maxTop)}px`;
+    host.style.right = "auto";
+  }
+
+  function stopDrag(e) {
+    document.removeEventListener("mousemove", onDrag, true);
+    document.removeEventListener("mouseup", stopDrag, true);
+    const wasClick = !dragMoved;
+    dragStart = null;
+    dragMoved = false;
+    if (wasClick) {
+      minimized = false;
+      renderLive();
+    }
+  }
+
+  // Si el piloto se arrastró cerca de un borde, al desplegar el panel completo (300px de ancho)
+  // este podría salirse de la pantalla; lo recolocamos dentro del viewport sin tocar la posición
+  // si nunca se arrastró (sigue anclado por top/right, que ya siempre cabe).
+  function clampHostToViewport() {
+    if (!host || host.style.left === "") return;
+    const rect = host.getBoundingClientRect();
+    const maxLeft = Math.max(0, window.innerWidth - rect.width);
+    const maxTop = Math.max(0, window.innerHeight - rect.height);
+    host.style.left = `${Math.min(parseFloat(host.style.left) || 0, maxLeft)}px`;
+    host.style.top = `${Math.min(parseFloat(host.style.top) || 0, maxTop)}px`;
+  }
+
   function showConsent() {
     ensureHost();
+    minimized = false;
     root.innerHTML = `
       <div class="panel">
         <div class="title">🎴 12 Runes</div>
@@ -100,6 +168,16 @@
       return;
     }
     ensureHost();
+
+    // Con una partida pendiente de confirmar, el panel se fuerza a expandido aunque `minimized`
+    // siga a true: eso sí necesita que hagas click en Gané/Perdí/Descartar, no puede quedarse
+    // escondido en el piloto.
+    if (minimized && pendingGames.length === 0 && currentGameNumber != null) {
+      root.innerHTML = `<div class="pilot" id="rbt-pilot" title="Grabando · arrastra para moverlo o haz clic para abrir"><span class="pilot-dot"></span></div>`;
+      root.querySelector("#rbt-pilot").addEventListener("mousedown", startDrag);
+      clampHostToViewport();
+      return;
+    }
 
     // Antes esto era un <select> + botón "Confirmar": en partidas reales, dentro de la página
     // de TCG Arena, el desplegable nativo dejaba de abrirse de forma intermitente (el juego
@@ -129,9 +207,15 @@
     // se queda colgada sin que llegue ningún aviso automático (ver `connectionstatechange` en
     // main-world-hook.js — cubre lo detectable a nivel de protocolo, pero por si acaso): permite
     // forzar el aviso de Gané/Perdí/Descartar a mano en vez de quedarse grabando para siempre.
+    // El botón de minimizar solo se pinta si de verdad puede minimizar algo: con una partida
+    // pendiente delante, el panel se queda expandido pase lo que pase (ver arriba), así que
+    // ofrecer un botón que no hace nada solo confundiría.
     const recordingHtml =
       currentGameNumber != null
-        ? `<div class="badge"><span class="dot"></span> Grabando Game ${currentGameNumber}…</div>
+        ? `<div class="badge-row">
+             <div class="badge"><span class="dot"></span> Grabando Game ${currentGameNumber}…</div>
+             ${pendingGames.length === 0 ? '<button class="minimize-btn" id="rbt-minimize" title="Minimizar">–</button>' : ""}
+           </div>
            <button class="secondary" id="rbt-force-finalize">La partida ya ha terminado</button>`
         : "";
 
@@ -163,6 +247,14 @@
     });
     const forceBtn = root.querySelector("#rbt-force-finalize");
     if (forceBtn) forceBtn.addEventListener("click", () => send({ type: "force-finalize" }));
+    const minimizeBtn = root.querySelector("#rbt-minimize");
+    if (minimizeBtn) {
+      minimizeBtn.addEventListener("click", () => {
+        minimized = true;
+        renderLive();
+      });
+    }
+    clampHostToViewport();
   }
 
   // Al cerrarse la conexión (fin de la serie), el service worker manda de golpe TODAS las
@@ -200,6 +292,7 @@
     if (msg.type === "show-consent-prompt") showConsent();
     else if (msg.type === "show-recording-indicator") {
       currentGameNumber = msg.gameNumber ?? 1;
+      minimized = true;
       renderLive();
     } else if (msg.type === "series-game-finished") showSeriesGameFinished(msg);
     else if (msg.type === "series-ended") showSeriesEnded(msg);

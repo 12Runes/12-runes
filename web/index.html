@@ -210,9 +210,15 @@
     padding: 10px 14px; margin: -2px 0 12px;
   }
   .patch-notes.expanded { display: block; animation: fadeIn 0.15s ease both; }
-  .patch-notes ul { margin: 0; padding-left: 18px; }
+  .patch-notes ul { margin: 0 0 10px; padding-left: 18px; }
   .patch-notes li { margin-bottom: 4px; }
-  .patch-notes li:last-child { margin-bottom: 0; }
+  .patch-notes-date { font-weight: 700; color: var(--text-primary); margin: 10px 0 4px; }
+  .patch-notes-date:first-child { margin-top: 0; }
+  .patch-notes-history-toggle {
+    font: inherit; font-size: 12px; font-weight: 700; color: var(--good-text); background: none;
+    border: none; padding: 0; margin-top: 2px; cursor: pointer; text-decoration: underline;
+    text-underline-offset: 2px;
+  }
   .install-card-text { flex: 1 1 320px; min-width: 0; }
   .install-card-text h2 { margin: 0 0 6px; }
   .install-card-text p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0 0 10px; }
@@ -577,7 +583,7 @@
     <div class="install-card" id="install-card">
       <div class="install-card-text">
         <div class="update-flag" id="update-flag" data-i18n="install.updateFlag">Hay una nueva versión. Repite los pasos de instalación.</div>
-        <button type="button" class="patch-notes-toggle" id="patch-notes-toggle" data-i18n="install.patchNotesToggle">Ver notas de esta versión</button>
+        <button type="button" class="patch-notes-toggle" id="patch-notes-toggle" data-i18n="install.patchNotesToggle">Ver notas del parche</button>
         <div class="patch-notes" id="patch-notes"></div>
         <h2 data-i18n="install.title">Instalar la extensión</h2>
         <p data-i18n="install.intro">
@@ -812,7 +818,9 @@ const I18N = {
     "install.button": "Descargar extensión (.zip)",
     "install.hint": "Cuando la actualicemos, repite estos pasos con el zip nuevo.",
     "install.updateFlag": "Hay una nueva versión. Repite los pasos de instalación.",
-    "install.patchNotesToggle": "Ver notas de esta versión",
+    "install.patchNotesToggle": "Ver notas del parche",
+    "install.patchNotesShowHistory": "Ver histórico completo",
+    "install.patchNotesHideHistory": "Ver solo la última semana",
     "home.trackerTitle": "Rendimiento y win rate",
     "home.trackerDesc": "Estadísticas por Legend, rendimiento de cada carta jugada, matchups y tus partidas recientes — la vista completa de cómo te está yendo.",
     "home.mulliganTitle": "Simulador de mulligans",
@@ -941,7 +949,9 @@ const I18N = {
     "install.button": "Download extension (.zip)",
     "install.hint": "When we update it, repeat these steps with the new zip.",
     "install.updateFlag": "A new version is available. Repeat the install steps.",
-    "install.patchNotesToggle": "See what's new in this version",
+    "install.patchNotesToggle": "See patch notes",
+    "install.patchNotesShowHistory": "See full history",
+    "install.patchNotesHideHistory": "Show only the last week",
     "home.trackerTitle": "Performance & win rate",
     "home.trackerDesc": "Stats by Legend, per-card performance, matchups, and your recent games — the full picture of how you're doing.",
     "home.mulliganTitle": "Mulligan simulator",
@@ -2100,17 +2110,23 @@ function toggleTheme() {
   applyTheme(next);
 }
 
-// Notas de la versión que se muestran al desplegar el botón "Ver notas de esta versión".
-// Clave = número de versión (el mismo que escribe web/downloads/version.txt); cada entrada
-// lleva es/en como listas de líneas en lenguaje llano, no como mensajes de commit.
-const CHANGELOG = {
-  "0.4.0": {
+// Notas del parche que se muestran al desplegar el botón "Ver notas del parche". Una entrada
+// por día de cambios reales (nunca por versión: si un día salen varias versiones, comparten
+// entrada), en orden cronológico de aparición aquí — se reordenan igualmente al pintar, así que
+// da igual dónde se añada una nueva. Cada entrada lleva es/en como líneas en lenguaje llano, no
+// como mensajes de commit. NUNCA se borran entradas antiguas, solo se añaden nuevas: son el
+// histórico que destapa el botón "Ver histórico completo".
+const CHANGELOG = [
+  {
+    date: "2026-09-15",
     es: [
       "Arreglado: pulsar \"Play\" varias veces al crear la partida ya no genera partidas duplicadas o falsas.",
       "Ya no se guardan partidas con muy poca actividad (mínimo 2 turnos por jugador), para evitar datos falsos.",
       "El botón \"No sé\" ahora es \"Descartar partida\": al usarlo, esa partida no se sube nunca. Solo se sube al pulsar \"Gané\" o \"Perdí\".",
       "Arreglado: un \"Timeout\" del servidor de tcg-arena.fr ya no deja la partida sin preguntar el resultado. Se detecta automáticamente y además hay un botón manual \"La partida ya ha terminado\" por si acaso.",
       "Nuevo: al pasar el ratón por la matriz de matchups (en \"On the play\"/\"On the draw\") se ve el desglose de victorias y derrotas por cada battlefield jugado.",
+      "Nuevo: el aviso de \"Grabando partida\" ahora se minimiza solo a un pequeño piloto que no tapa la pantalla del juego. Se puede arrastrar a cualquier zona, y con un clic se vuelve a abrir el panel completo.",
+      "Nuevo: estas notas del parche, con el histórico de cambios de cada semana.",
     ],
     en: [
       "Fixed: clicking \"Play\" more than once while creating a lobby no longer creates duplicate or fake matches.",
@@ -2118,25 +2134,75 @@ const CHANGELOG = {
       "The \"I don't know\" button is now \"Discard match\": using it means that match is never uploaded. Only \"Won\"/\"Lost\" upload a result.",
       "Fixed: a tcg-arena.fr server \"Timeout\" no longer leaves a match without asking for a result. It's now detected automatically, plus a manual \"This match has already ended\" button as a backup.",
       "New: hovering over the matchup matrix (in the \"On the play\"/\"On the draw\" views) now shows a win/loss breakdown per battlefield played.",
+      "New: the \"Recording match\" notice now minimizes to a small pilot light that no longer covers the game screen. Drag it anywhere, and a click reopens the full panel.",
+      "New: these patch notes, with a weekly history of changes.",
     ],
   },
-};
+];
 
 let latestVersion = null;
+let showPatchNotesHistory = false;
 
+function parseChangelogDate(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatChangelogDate(iso) {
+  return new Intl.DateTimeFormat(lang === "es" ? "es-ES" : "en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(parseChangelogDate(iso));
+}
+
+function daysAgoISO(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+// Por defecto solo se ven los cambios de los últimos 7 días (hoy incluido), agrupados por día;
+// "Ver histórico completo" destapa todo lo anterior sin perder el agrupado. Nunca se borra nada
+// de CHANGELOG por esto, solo se filtra qué se pinta.
 function renderPatchNotes() {
   const el = document.getElementById("patch-notes");
   if (!el) return;
-  const entries = CHANGELOG[latestVersion]?.[lang];
   el.textContent = "";
-  if (!entries || !entries.length) return;
-  const ul = document.createElement("ul");
-  for (const line of entries) {
-    const li = document.createElement("li");
-    li.textContent = line;
-    ul.appendChild(li);
+
+  const sorted = [...CHANGELOG].sort((a, b) => (a.date < b.date ? 1 : -1));
+  const cutoff = daysAgoISO(6);
+  const recent = sorted.filter((entry) => entry.date >= cutoff);
+  const visible = showPatchNotesHistory ? sorted : recent;
+
+  for (const entry of visible) {
+    const heading = document.createElement("div");
+    heading.className = "patch-notes-date";
+    heading.textContent = formatChangelogDate(entry.date);
+    el.appendChild(heading);
+
+    const ul = document.createElement("ul");
+    for (const line of entry[lang] ?? []) {
+      const li = document.createElement("li");
+      li.textContent = line;
+      ul.appendChild(li);
+    }
+    el.appendChild(ul);
   }
-  el.appendChild(ul);
+
+  if (sorted.length > recent.length) {
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "patch-notes-history-toggle";
+    toggle.textContent = showPatchNotesHistory
+      ? t("install.patchNotesHideHistory")
+      : t("install.patchNotesShowHistory");
+    toggle.addEventListener("click", () => {
+      showPatchNotesHistory = !showPatchNotesHistory;
+      renderPatchNotes();
+    });
+    el.appendChild(toggle);
+  }
 }
 
 function togglePatchNotes() {
