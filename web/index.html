@@ -840,6 +840,8 @@ const I18N = {
     "option.noChampion": "Sin Chosen Champion",
     "option.noGamesYet": "Sin partidas todavía",
     "option.loading": "Cargando…",
+    "legend.onlyAsOpponent": "solo como rival",
+    "legend.splitCount": "{localPart}, {opponent} como rival",
     "option.loadingArchetypes": "Cargando arquetipos…",
     "option.onThePlayStart": "On the play (empiezas)",
     "option.onTheDrawSecond": "On the draw (vas segundo)",
@@ -925,6 +927,8 @@ const I18N = {
     "matrix.battlefieldTooltipEmpty": "Sin battlefield registrado en estas partidas.",
     "unit.game": "partida",
     "unit.games": "partidas",
+    "unit.playedGame": "jugada",
+    "unit.playedGames": "jugadas",
     "unit.variant": "variante",
     "unit.variants": "variantes",
     "error.loading": "Error cargando datos: {msg}. ¿Está el backend corriendo?",
@@ -971,6 +975,8 @@ const I18N = {
     "option.noChampion": "No Chosen Champion",
     "option.noGamesYet": "No games yet",
     "option.loading": "Loading…",
+    "legend.onlyAsOpponent": "only as opponent",
+    "legend.splitCount": "{localPart}, {opponent} as opponent",
     "option.loadingArchetypes": "Loading archetypes…",
     "option.onThePlayStart": "On the play (you go first)",
     "option.onTheDrawSecond": "On the draw (you go second)",
@@ -1056,6 +1062,8 @@ const I18N = {
     "matrix.battlefieldTooltipEmpty": "No battlefield recorded for these games.",
     "unit.game": "game",
     "unit.games": "games",
+    "unit.playedGame": "played",
+    "unit.playedGames": "played",
     "unit.variant": "variant",
     "unit.variants": "variants",
     "error.loading": "Error loading data: {msg}. Is the backend running?",
@@ -2046,6 +2054,15 @@ function updateScopeUI() {
   allBtn.classList.toggle("active", scope === "all");
 }
 
+// Cada partida grabada cuenta el doble (tu lado y el del rival — ver bothPerspectives en el
+// servidor), así que una Legend puede aparecer aquí sin que tú la hayas jugado nunca, solo por
+// habértela enfrentado. Este sufijo deja claro de dónde sale cada recuento.
+function legendSplitSuffix(l) {
+  if (!l.gamesAsOpponent) return "";
+  if (!l.gamesAsLocal) return ` (${t("legend.onlyAsOpponent")})`;
+  return ` (${t("legend.splitCount", { localPart: tCount(l.gamesAsLocal, "playedGame"), opponent: l.gamesAsOpponent })})`;
+}
+
 async function refreshLegendSelect() {
   const legendSelect = document.getElementById("legend-select");
   const previous = legendSelect.value;
@@ -2059,7 +2076,7 @@ async function refreshLegendSelect() {
     renderDeckList(null);
     return false;
   }
-  for (const l of allLegends) legendSelect.appendChild(el("option", { value: l.legendName, text: `${l.legendName} (${l.games})` }));
+  for (const l of allLegends) legendSelect.appendChild(el("option", { value: l.legendName, text: `${l.legendName} (${l.games})${legendSplitSuffix(l)}` }));
   if (previous && allLegends.some((l) => l.legendName === previous)) legendSelect.value = previous;
   return true;
 }

@@ -100,6 +100,11 @@ export interface PerspectiveMatch {
   startedAt: Date;
   legendName: string | null;
   opponentLegendName: string | null;
+  // De qué lado de la partida viene este punto de datos: "local" es el lado del contributor
+  // filtrado (el que de verdad jugó esa Legend), "opponent" es el rival al que se enfrentó. Sirve
+  // para poder distinguir, en listados como /stats/legends, cuántas partidas de una Legend
+  // fueron jugadas por ti frente a cuántas solo la enfrentaste jugando otra cosa.
+  side: Perspective;
 }
 
 export function toPerspective(m: RawMatchForPerspective, side: Perspective): PerspectiveMatch {
@@ -115,6 +120,7 @@ export function toPerspective(m: RawMatchForPerspective, side: Perspective): Per
       startedAt: m.startedAt,
       legendName: m.localLegendName,
       opponentLegendName: m.opponentLegendName,
+      side,
     };
   }
   return {
@@ -130,6 +136,7 @@ export function toPerspective(m: RawMatchForPerspective, side: Perspective): Per
     startedAt: m.startedAt,
     legendName: m.opponentLegendName,
     opponentLegendName: m.localLegendName,
+    side,
   };
 }
 

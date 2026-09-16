@@ -202,6 +202,8 @@ app.get("/stats/legends", async (request) => {
     wins: number;
     losses: number;
     unknown: number;
+    gamesAsLocal: number;
+    gamesAsOpponent: number;
     onPlay: { games: number; wins: number; losses: number };
     onDraw: { games: number; wins: number; losses: number };
   };
@@ -215,11 +217,15 @@ app.get("/stats/legends", async (request) => {
         wins: 0,
         losses: 0,
         unknown: 0,
+        gamesAsLocal: 0,
+        gamesAsOpponent: 0,
         onPlay: { games: 0, wins: 0, losses: 0 },
         onDraw: { games: 0, wins: 0, losses: 0 },
       });
     const entry = byLegend.get(name)!;
     entry.games += 1;
+    if (p.side === "local") entry.gamesAsLocal += 1;
+    else entry.gamesAsOpponent += 1;
     if (p.result === "WIN") entry.wins += 1;
     else if (p.result === "LOSS") entry.losses += 1;
     else entry.unknown += 1;
