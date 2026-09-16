@@ -60,17 +60,22 @@ export interface BattlefieldEntry {
   cardImage: string | null;
 }
 
+// Los campos marcados opcionales son los "caros" de traer de la base de datos (sobre todo
+// `events`, el log completo de la partida — potencialmente la columna más pesada de la tabla).
+// No todos los endpoints que pasan por `toPerspective` los necesitan (ver los distintos SELECT_*
+// en index.ts): quedan opcionales aquí para que cada uno pida a Prisma solo lo que de verdad va a
+// usar, y `toPerspective` los rellena con un valor neutro si no vinieron en el select.
 export interface RawMatchForPerspective {
   id: string;
   result: string;
   onThePlay: boolean | null;
-  localPlayerId: string | null;
-  opponentPlayerId: string | null;
-  events: string;
-  localDeck: string | null;
-  opponentDeck: string | null;
-  localBattlefields: string | null;
-  opponentBattlefields: string | null;
+  localPlayerId?: string | null;
+  opponentPlayerId?: string | null;
+  events?: string;
+  localDeck?: string | null;
+  opponentDeck?: string | null;
+  localBattlefields?: string | null;
+  opponentBattlefields?: string | null;
   localLegendName: string | null;
   opponentLegendName: string | null;
   startedAt: Date;
@@ -113,10 +118,10 @@ export function toPerspective(m: RawMatchForPerspective, side: Perspective): Per
       id: m.id,
       result: m.result,
       onThePlay: m.onThePlay,
-      localPlayerId: m.localPlayerId,
-      events: m.events,
-      localDeck: m.localDeck,
-      battlefields: parseBattlefields(m.localBattlefields),
+      localPlayerId: m.localPlayerId ?? null,
+      events: m.events ?? "",
+      localDeck: m.localDeck ?? null,
+      battlefields: parseBattlefields(m.localBattlefields ?? null),
       startedAt: m.startedAt,
       legendName: m.localLegendName,
       opponentLegendName: m.opponentLegendName,
@@ -129,10 +134,10 @@ export function toPerspective(m: RawMatchForPerspective, side: Perspective): Per
     id: `${m.id}:opp`,
     result: invertResult(m.result),
     onThePlay: m.onThePlay == null ? null : !m.onThePlay,
-    localPlayerId: m.opponentPlayerId,
-    events: m.events,
-    localDeck: m.opponentDeck,
-    battlefields: parseBattlefields(m.opponentBattlefields),
+    localPlayerId: m.opponentPlayerId ?? null,
+    events: m.events ?? "",
+    localDeck: m.opponentDeck ?? null,
+    battlefields: parseBattlefields(m.opponentBattlefields ?? null),
     startedAt: m.startedAt,
     legendName: m.opponentLegendName,
     opponentLegendName: m.localLegendName,

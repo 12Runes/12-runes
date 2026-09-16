@@ -77,23 +77,40 @@ function contributorWhere(query: { contributor?: string }) {
   return query.contributor ? { contributorId: query.contributor } : {};
 }
 
-// Columnas necesarias para reconstruir las dos perspectivas de una partida (ver
-// `toPerspective` en stats.ts): con esto de sobra, cada endpoint de stats puede minar tanto mi
-// lado como el del rival sin una segunda consulta.
-const PERSPECTIVE_SELECT = {
+// Tres niveles de columnas para reconstruir "perspectivas" (ver `toPerspective` en stats.ts),
+// de más barato a más caro de traer de Turso — cada endpoint usa el más ligero que le sirva en
+// vez de un único SELECT que traiga siempre todo (`events`, el log completo de la partida, es
+// con diferencia la columna más pesada; los mazos/battlefields van detrás). Los campos que faltan
+// respecto al superconjunto los rellena `toPerspective` con un valor neutro.
+//
+// Solo resultado/legend — de sobra para /stats/legends y /stats/matchups, que nunca leen mazo,
+// battlefields ni el log de eventos.
+const RESULT_SELECT = {
   id: true,
   result: true,
   onThePlay: true,
-  localPlayerId: true,
-  opponentPlayerId: true,
-  events: true,
+  localLegendName: true,
+  opponentLegendName: true,
+  startedAt: true,
+} as const;
+
+// Añade mazos y battlefields — para /stats/decks y /stats/matchup-matrix, que agrupan por
+// arquetipo/battlefield pero no tocan el log de eventos crudo.
+const DECK_SELECT = {
+  ...RESULT_SELECT,
   localDeck: true,
   opponentDeck: true,
   localBattlefields: true,
   opponentBattlefields: true,
-  localLegendName: true,
-  opponentLegendName: true,
-  startedAt: true,
+} as const;
+
+// El superconjunto completo, con el log de eventos — solo lo necesitan /stats/cards y
+// /stats/card-grades, que reconstruyen qué cartas se jugaron turno a turno.
+const FULL_SELECT = {
+  ...DECK_SELECT,
+  localPlayerId: true,
+  opponentPlayerId: true,
+  events: true,
 } as const;
 
 app.post("/matches", async (request, reply) => {
@@ -190,7 +207,7 @@ app.get("/stats/legends", async (request) => {
   const query = request.query as { contributor?: string };
   const matches = await prisma.match.findMany({
     where: { OR: [{ localLegendName: { not: null } }, { opponentLegendName: { not: null } }], ...contributorWhere(query) },
-    select: PERSPECTIVE_SELECT,
+    select: RESULT_SELECT,
   });
   // Cada partida aporta dos puntos de datos: el mío (tal cual) y el del rival (mismo log de
   // eventos, resultado invertido) — ver `toPerspective` en stats.ts.
@@ -259,7 +276,7 @@ app.get("/stats/cards", async (request, reply) => {
   // dos, si fue mirror match) corresponde a cada partida.
   const matches = await prisma.match.findMany({
     where: { OR: [{ localLegendName: query.legend }, { opponentLegendName: query.legend }], ...contributorWhere(query) },
-    select: PERSPECTIVE_SELECT,
+    select: FULL_SELECT,
   });
 
   let perspectives = perspectivesForLegend(matches, query.legend);
@@ -292,7 +309,7 @@ app.get("/stats/decks", async (request, reply) => {
 
   const matches = await prisma.match.findMany({
     where: { OR: [{ localLegendName: query.legend }, { opponentLegendName: query.legend }], ...contributorWhere(query) },
-    select: PERSPECTIVE_SELECT,
+    select: DECK_SELECT,
   });
 
   return computeDeckClusters(perspectivesForLegend(matches, query.legend));
@@ -302,7 +319,7 @@ app.get("/stats/matchups", async (request) => {
   const query = request.query as { contributor?: string };
   const matches = await prisma.match.findMany({
     where: { localLegendName: { not: null }, opponentLegendName: { not: null }, ...contributorWhere(query) },
-    select: PERSPECTIVE_SELECT,
+    select: RESULT_SELECT,
   });
   const perspectives = bothPerspectives(matches).filter((p) => p.legendName != null && p.opponentLegendName != null);
 
@@ -340,7 +357,7 @@ app.get("/stats/card-grades", async (request) => {
       ...(query.legend ? { OR: [{ localLegendName: query.legend }, { opponentLegendName: query.legend }] } : {}),
       ...contributorWhere(query),
     },
-    select: PERSPECTIVE_SELECT,
+    select: FULL_SELECT,
   });
 
   const perspectives = query.legend ? perspectivesForLegend(matches, query.legend) : bothPerspectives(matches);
@@ -382,7 +399,7 @@ app.get("/stats/matchup-matrix", async (request, reply) => {
       opponentLegendName: { not: null },
       ...contributorWhere(query),
     },
-    select: PERSPECTIVE_SELECT,
+    select: DECK_SELECT,
   });
 
   let perspectives = bothPerspectives(matches).filter((p) => p.legendName != null && p.opponentLegendName != null);
