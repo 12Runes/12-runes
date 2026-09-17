@@ -187,15 +187,24 @@
   }
   .install-card.update-available::before { background: var(--good); }
   .install-card.update-available .btn-primary { background: var(--good); }
+  .install-card.up-to-date::before { background: var(--good); }
   /* La visibilidad del aviso depende solo de esta clase (nunca de JS tocando `hidden`
      directamente), para que barra/botón/aviso no puedan quedar desincronizados entre sí. */
-  .update-flag {
+  .update-flag, .up-to-date-flag {
     display: none; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
     color: var(--good-text); background: color-mix(in srgb, var(--good) 16%, var(--surface-1));
     border: 1px solid color-mix(in srgb, var(--good) 45%, var(--border)); border-radius: 999px;
     padding: 4px 12px; margin: 0 0 10px;
   }
   .install-card.update-available .update-flag { display: inline-flex; }
+  /* Con la última versión ya instalada, no tiene sentido seguir ofreciendo el botón de
+     instalar ni las instrucciones — se sustituyen por la confirmación de que ya está al día. */
+  .install-card.up-to-date .up-to-date-flag { display: inline-flex; }
+  .install-card.up-to-date .install-card-text h2,
+  .install-card.up-to-date .install-card-text p,
+  .install-card.up-to-date .install-card-cta {
+    display: none;
+  }
   /* Igual que el aviso: visible solo con la clase de la tarjeta, nunca por su cuenta — así no
      puede quedarse el botón huérfano mostrando notas de una versión que ya no hace falta. */
   .patch-notes-toggle {
@@ -588,6 +597,7 @@
     <div class="install-card" id="install-card">
       <div class="install-card-text">
         <div class="update-flag" id="update-flag" data-i18n="install.updateFlag">Hay una nueva versión. Repite los pasos de instalación.</div>
+        <div class="up-to-date-flag" id="up-to-date-flag" data-i18n="install.upToDate">✅ Tienes instalada la última versión. La extensión está actualizada.</div>
         <button type="button" class="patch-notes-toggle" id="patch-notes-toggle" data-i18n="install.patchNotesToggle">Ver notas del parche</button>
         <div class="patch-notes" id="patch-notes"></div>
         <h2 data-i18n="install.title">Instalar la extensión</h2>
@@ -816,6 +826,7 @@ const I18N = {
     "install.hint": "Se actualiza sola — no hace falta hacer nada más.",
     "install.manualFallback": "¿Prefieres instalarla a mano? Descarga el .zip",
     "install.updateFlag": "Hay una nueva versión disponible. Chrome la actualizará solo en breve, o hazlo ya desde chrome://extensions.",
+    "install.upToDate": "✅ Tienes instalada la última versión. La extensión está actualizada.",
     "install.patchNotesToggle": "Ver notas del parche",
     "install.patchNotesShowHistory": "Ver histórico completo",
     "install.patchNotesHideHistory": "Ver solo la última semana",
@@ -948,6 +959,7 @@ const I18N = {
     "install.hint": "It updates itself — nothing else to do.",
     "install.manualFallback": "Prefer to install it by hand? Download the .zip",
     "install.updateFlag": "A new version is available. Chrome will update it automatically soon, or do it now from chrome://extensions.",
+    "install.upToDate": "✅ You have the latest version installed. The extension is up to date.",
     "install.patchNotesToggle": "See patch notes",
     "install.patchNotesShowHistory": "See full history",
     "install.patchNotesHideHistory": "Show only the last week",
@@ -2288,13 +2300,15 @@ async function checkExtensionVersion() {
   try {
     const installed = document.documentElement.dataset.rbtExtensionVersion;
     if (!installed) {
-      card?.classList.remove("update-available");
+      card?.classList.remove("update-available", "up-to-date");
       return;
     }
     const latest = (await (await fetch("downloads/version.txt", { cache: "no-store" })).text()).trim();
     latestVersion = latest || null;
     renderPatchNotes();
-    card?.classList.toggle("update-available", Boolean(latest) && installed !== latest);
+    const isLatest = Boolean(latest) && installed === latest;
+    card?.classList.toggle("update-available", Boolean(latest) && !isLatest);
+    card?.classList.toggle("up-to-date", isLatest);
   } catch {
     // sin conexión al archivo de versión: dejamos el estado tal como estaba
   }
