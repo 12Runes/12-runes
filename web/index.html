@@ -229,6 +229,7 @@
   .install-card-cta { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .install-card-cta .btn-primary { display: inline-block; text-decoration: none; text-align: center; margin: 0; }
   .install-card-cta .hint { font-size: 11px; color: var(--text-muted); }
+  .install-card-cta .manual-fallback { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
   .home-menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin: 8px 0 12px; }
   .home-card {
@@ -595,17 +596,13 @@
         <div class="patch-notes" id="patch-notes"></div>
         <h2 data-i18n="install.title">Instalar la extensión</h2>
         <p data-i18n="install.intro">
-          Todavía no está en la Chrome Web Store, así que se instala en modo desarrollador (tarda un minuto):
+          Ya está disponible en la Chrome Web Store — instálala en un clic.
         </p>
-        <ol class="install-steps">
-          <li data-i18n="install.step1">Descarga el .zip y descomprímelo en una carpeta que no vayas a borrar.</li>
-          <li><span data-i18n="install.step2Pre">Ve a</span> <code>chrome://extensions</code> <span data-i18n="install.step2Post">y activa "Modo desarrollador" (arriba a la derecha).</span></li>
-          <li data-i18n="install.step3">Pulsa "Cargar descomprimida" y elige esa carpeta.</li>
-        </ol>
       </div>
       <div class="install-card-cta">
-        <a class="btn-primary" href="downloads/12-runes-extension.zip" download data-i18n="install.button">Descargar extensión (.zip)</a>
-        <span class="hint" data-i18n="install.hint">Cuando la actualicemos, repite estos pasos con el zip nuevo.</span>
+        <a class="btn-primary" href="https://chromewebstore.google.com/detail/12-runes/lkehehnmpipicjjkimbmndoichpibkkh" target="_blank" rel="noopener" data-i18n="install.button">Añadir a Chrome</a>
+        <span class="hint" data-i18n="install.hint">Se actualiza sola — no hace falta hacer nada más.</span>
+        <a class="manual-fallback" href="downloads/12-runes-extension.zip" download data-i18n="install.manualFallback">¿Prefieres instalarla a mano? Descarga el .zip</a>
       </div>
     </div>
     <div class="home-menu">
@@ -820,14 +817,11 @@ const I18N = {
     "home.contributorNoticeStrong": "Aviso sobre \"Mis partidas\":",
     "home.contributorNoticeText": "mientras la extensión esté en fase de pruebas, si alguna vez la reinstalas para actualizarla, tu historial puede aparecer vacío — se genera un identificador nuevo y no hay forma de recuperar el anterior. Esto dejará de pasar en cuanto la extensión esté publicada de forma estable en la Chrome Web Store. Gracias por la comprensión — este es un proyecto que mejora gracias al feedback de todas y todos.",
     "install.title": "Instalar la extensión",
-    "install.intro": "Todavía no está en la Chrome Web Store, así que se instala en modo desarrollador (tarda un minuto):",
-    "install.step1": "Descarga el .zip y descomprímelo en una carpeta que no vayas a borrar.",
-    "install.step2Pre": "Ve a",
-    "install.step2Post": "y activa \"Modo desarrollador\" (arriba a la derecha).",
-    "install.step3": "Pulsa \"Cargar descomprimida\" y elige esa carpeta.",
-    "install.button": "Descargar extensión (.zip)",
-    "install.hint": "Cuando la actualicemos, repite estos pasos con el zip nuevo.",
-    "install.updateFlag": "Hay una nueva versión. Repite los pasos de instalación.",
+    "install.intro": "Ya está disponible en la Chrome Web Store — instálala en un clic.",
+    "install.button": "Añadir a Chrome",
+    "install.hint": "Se actualiza sola — no hace falta hacer nada más.",
+    "install.manualFallback": "¿Prefieres instalarla a mano? Descarga el .zip",
+    "install.updateFlag": "Hay una nueva versión disponible. Chrome la actualizará solo en breve, o hazlo ya desde chrome://extensions.",
     "install.patchNotesToggle": "Ver notas del parche",
     "install.patchNotesShowHistory": "Ver histórico completo",
     "install.patchNotesHideHistory": "Ver solo la última semana",
@@ -957,14 +951,11 @@ const I18N = {
     "home.contributorNoticeStrong": "A note about \"My games\":",
     "home.contributorNoticeText": "while the extension is still in testing, if you ever reinstall it to update it, your history may show up empty — a new identifier gets generated and there's no way to recover the old one. This will stop happening once the extension is stably published on the Chrome Web Store. Thanks for your understanding — this project gets better thanks to everyone's feedback.",
     "install.title": "Install the extension",
-    "install.intro": "Not on the Chrome Web Store yet, so it installs in developer mode (takes a minute):",
-    "install.step1": "Download the .zip and unzip it into a folder you won't delete.",
-    "install.step2Pre": "Go to",
-    "install.step2Post": "and turn on \"Developer mode\" (top right).",
-    "install.step3": "Click \"Load unpacked\" and pick that folder.",
-    "install.button": "Download extension (.zip)",
-    "install.hint": "When we update it, repeat these steps with the new zip.",
-    "install.updateFlag": "A new version is available. Repeat the install steps.",
+    "install.intro": "Now available on the Chrome Web Store — install it in one click.",
+    "install.button": "Add to Chrome",
+    "install.hint": "It updates itself — nothing else to do.",
+    "install.manualFallback": "Prefer to install it by hand? Download the .zip",
+    "install.updateFlag": "A new version is available. Chrome will update it automatically soon, or do it now from chrome://extensions.",
     "install.patchNotesToggle": "See patch notes",
     "install.patchNotesShowHistory": "See full history",
     "install.patchNotesHideHistory": "Show only the last week",
@@ -2195,11 +2186,13 @@ const CHANGELOG = [
       "Varias vistas del panel (Rendimiento, Matchups...) van bastante más rápido — el servidor pedía a la base de datos más datos de los que de verdad usaba en cada consulta.",
       "La carga inicial de la página también es más rápida: antes se pedían los datos de cada sección (mulligan, valoración de cartas, matriz...) uno detrás de otro; ahora se piden todos a la vez.",
       "Arreglado: la página de opciones de la extensión se quedaba con colores claros fijos si usabas Chrome en modo oscuro.",
+      "¡Ya está en la Chrome Web Store! El botón de instalar ahora lleva directamente a la ficha en un clic, en vez del .zip manual.",
     ],
     en: [
       "Several dashboard views (Performance, Matchups...) are noticeably faster now — the server was asking the database for more data than each query actually used.",
       "The page's initial load is also faster: each section's data (mulligan, card grades, matrix...) used to be requested one after another; now they're all requested at once.",
       "Fixed: the extension's options page stayed stuck in light colors if you used Chrome in dark mode.",
+      "It's on the Chrome Web Store now! The install button now goes straight to the listing in one click, instead of the manual .zip.",
     ],
   },
 ];
