@@ -59,6 +59,15 @@ model Match {
   localBattlefields    String?
   opponentBattlefields String?
 
+  // Cartas jugadas por cada lado en esta partida, ya extraídas de `events` una sola vez al
+  // guardar la partida (ver extractCardsPlayed en stats.ts) — evita tener que volver a parsear
+  // el log completo en cada lectura de /stats/cards o /stats/card-grades. Array de
+  // {cardId, cardName, cardType, cardImage, timesPlayed} serializado. Null si no se jugó
+  // ninguna carta identificable, o en partidas grabadas antes de esta función (se rellena solo
+  // al arrancar el servidor — ver el backfill en index.ts).
+  localCardsPlayed    String?
+  opponentCardsPlayed String?
+
   // Huella de la partida real (hash del contenido de `events` que viene del propio motor del
   // juego: id/playerId/timestamp de cada jugada — igual para los dos jugadores, a diferencia
   // de `seriesId`/`startedAt` que cada instalación genera por su cuenta). Si los dos jugadores

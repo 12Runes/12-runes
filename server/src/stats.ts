@@ -28,12 +28,64 @@ interface HistoryEvent {
 // fuera de la tabla de rendimiento.
 const EXCLUDED_CARD_TYPES = new Set(["Runes"]);
 
+export interface PlayedCard {
+  cardId: string;
+  cardName: string | null;
+  cardType: string | null;
+  cardImage: string | null;
+  // Veces que se jugó ESA carta en ESA partida (una entrada por cardId distinto, no una por
+  // jugada) — así una partida con "Bellows Breath" jugada 3 veces sigue contando como "1 partida
+  // en la que se jugó" para el win rate, pero suma 3 al total de veces jugada.
+  timesPlayed: number;
+}
+
+// Extrae, de un log de eventos crudo tal y como lo emite TCG Arena por WebRTC, las cartas que
+// jugó `playerId` en esa partida. Antes esto se repetía casi idéntico dentro de
+// computeCardStats y computeCardGrades, y se ejecutaba en CADA lectura de esos dos endpoints —
+// ahora se llama una sola vez, al guardar la partida (ver POST /matches en index.ts), y el
+// resultado se guarda ya calculado en localCardsPlayed/opponentCardsPlayed: computeCardStats y
+// computeCardGrades ya no tocan `events` para nada.
+export function extractCardsPlayed(events: unknown, playerId: string | null | undefined): PlayedCard[] {
+  if (!playerId || !Array.isArray(events)) return [];
+  const cards = new Map<string, PlayedCard>();
+  for (const e of events as HistoryEvent[]) {
+    if (!e || e.eventType !== "history" || !e.text || !CARD_PLAY_TEXTS.has(e.text)) continue;
+    if (e.playerId !== playerId) continue;
+    const card = e.params?.card;
+    if (!card?.cardId) continue;
+    if (card.cardType && EXCLUDED_CARD_TYPES.has(card.cardType)) continue;
+
+    let agg = cards.get(card.cardId);
+    if (!agg) {
+      agg = { cardId: card.cardId, cardName: card.cardName ?? null, cardType: card.cardType ?? null, cardImage: card.cardImage ?? null, timesPlayed: 0 };
+      cards.set(card.cardId, agg);
+    }
+    // Partidas grabadas antes de que empezáramos a guardar la imagen tienen estos campos a
+    // null; si esta carta ya se vio antes en esta misma partida sin ellos, no dejamos que ese
+    // null se quede fijo — en cuanto aparece una jugada con datos completos, se adoptan.
+    if (card.cardName && !agg.cardName) agg.cardName = card.cardName;
+    if (card.cardType && !agg.cardType) agg.cardType = card.cardType;
+    if (card.cardImage && !agg.cardImage) agg.cardImage = card.cardImage;
+    agg.timesPlayed++;
+  }
+  return Array.from(cards.values());
+}
+
+function parsePlayedCards(raw: string | null | undefined): PlayedCard[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export interface MatchForCardStats {
   id: string;
   result: string;
   onThePlay: boolean | null;
-  localPlayerId: string | null;
-  events: string;
+  cardsPlayed: PlayedCard[];
 }
 
 // --- "Perspectiva": minar los datos del rival exactamente igual que los propios -----------
@@ -60,22 +112,22 @@ export interface BattlefieldEntry {
   cardImage: string | null;
 }
 
-// Los campos marcados opcionales son los "caros" de traer de la base de datos (sobre todo
-// `events`, el log completo de la partida — potencialmente la columna más pesada de la tabla).
-// No todos los endpoints que pasan por `toPerspective` los necesitan (ver los distintos SELECT_*
-// en index.ts): quedan opcionales aquí para que cada uno pida a Prisma solo lo que de verdad va a
-// usar, y `toPerspective` los rellena con un valor neutro si no vinieron en el select.
+// Los campos marcados opcionales son los que no todos los endpoints necesitan (ver los
+// distintos SELECT_* en index.ts): quedan opcionales aquí para que cada uno pida a Prisma solo
+// lo que de verdad va a usar, y `toPerspective` los rellena con un valor neutro si no vinieron
+// en el select. Nótese que `events` NO aparece aquí — ya no hace falta traerlo en ningún select
+// de lectura: las cartas jugadas se calculan una sola vez al guardar la partida (ver
+// extractCardsPlayed/POST /matches) y se guardan ya listas en local/opponentCardsPlayed.
 export interface RawMatchForPerspective {
   id: string;
   result: string;
   onThePlay: boolean | null;
-  localPlayerId?: string | null;
-  opponentPlayerId?: string | null;
-  events?: string;
   localDeck?: string | null;
   opponentDeck?: string | null;
   localBattlefields?: string | null;
   opponentBattlefields?: string | null;
+  localCardsPlayed?: string | null;
+  opponentCardsPlayed?: string | null;
   localLegendName: string | null;
   opponentLegendName: string | null;
   startedAt: Date;
@@ -98,8 +150,7 @@ export interface PerspectiveMatch {
   id: string;
   result: string;
   onThePlay: boolean | null;
-  localPlayerId: string | null;
-  events: string;
+  cardsPlayed: PlayedCard[];
   localDeck: string | null;
   battlefields: BattlefieldEntry[];
   startedAt: Date;
@@ -118,8 +169,7 @@ export function toPerspective(m: RawMatchForPerspective, side: Perspective): Per
       id: m.id,
       result: m.result,
       onThePlay: m.onThePlay,
-      localPlayerId: m.localPlayerId ?? null,
-      events: m.events ?? "",
+      cardsPlayed: parsePlayedCards(m.localCardsPlayed),
       localDeck: m.localDeck ?? null,
       battlefields: parseBattlefields(m.localBattlefields ?? null),
       startedAt: m.startedAt,
@@ -134,8 +184,7 @@ export function toPerspective(m: RawMatchForPerspective, side: Perspective): Per
     id: `${m.id}:opp`,
     result: invertResult(m.result),
     onThePlay: m.onThePlay == null ? null : !m.onThePlay,
-    localPlayerId: m.opponentPlayerId ?? null,
-    events: m.events ?? "",
+    cardsPlayed: parsePlayedCards(m.opponentCardsPlayed),
     localDeck: m.opponentDeck ?? null,
     battlefields: parseBattlefields(m.opponentBattlefields ?? null),
     startedAt: m.startedAt,
@@ -211,28 +260,13 @@ export function computeCardStats(matches: MatchForCardStats[]) {
       recordResult(onDraw, m.result);
     }
 
-    let events: HistoryEvent[];
-    try {
-      events = JSON.parse(m.events);
-    } catch {
-      continue;
-    }
-    if (!Array.isArray(events)) continue;
-
-    const playedInThisMatch = new Set<string>();
-    for (const e of events) {
-      if (e.eventType !== "history" || !e.text || !CARD_PLAY_TEXTS.has(e.text)) continue;
-      if (!m.localPlayerId || e.playerId !== m.localPlayerId) continue;
-      const card = e.params?.card;
-      if (!card?.cardId) continue;
-      if (card.cardType && EXCLUDED_CARD_TYPES.has(card.cardType)) continue;
-
-      if (!cards.has(card.cardId)) {
-        cards.set(card.cardId, {
-          cardId: card.cardId,
-          cardName: card.cardName ?? null,
-          cardType: card.cardType ?? null,
-          cardImage: card.cardImage ?? null,
+    for (const played of m.cardsPlayed) {
+      if (!cards.has(played.cardId)) {
+        cards.set(played.cardId, {
+          cardId: played.cardId,
+          cardName: played.cardName,
+          cardType: played.cardType,
+          cardImage: played.cardImage,
           matchesPlayedIn: new Set(),
           totalTimesPlayed: 0,
           played: { wins: 0, losses: 0 },
@@ -240,19 +274,14 @@ export function computeCardStats(matches: MatchForCardStats[]) {
           onDraw: splitBucket(),
         });
       }
-      const agg = cards.get(card.cardId)!;
+      const agg = cards.get(played.cardId)!;
       // Partidas grabadas antes de que empezáramos a guardar la imagen tienen estos campos a
       // null; si esta carta ya se vio en una de esas, no dejamos que ese null se quede fijo
-      // para siempre — en cuanto aparece un evento con datos completos, los adoptamos.
-      if (card.cardName && !agg.cardName) agg.cardName = card.cardName;
-      if (card.cardType && !agg.cardType) agg.cardType = card.cardType;
-      if (card.cardImage && !agg.cardImage) agg.cardImage = card.cardImage;
-      agg.totalTimesPlayed++;
-      playedInThisMatch.add(card.cardId);
-    }
-
-    for (const cardId of playedInThisMatch) {
-      const agg = cards.get(cardId)!;
+      // para siempre — en cuanto aparece una jugada con datos completos, se adopta.
+      if (played.cardName && !agg.cardName) agg.cardName = played.cardName;
+      if (played.cardType && !agg.cardType) agg.cardType = played.cardType;
+      if (played.cardImage && !agg.cardImage) agg.cardImage = played.cardImage;
+      agg.totalTimesPlayed += played.timesPlayed;
       agg.matchesPlayedIn.add(m.id);
       recordResult(agg.played, m.result);
       if (m.onThePlay === true) {
@@ -598,8 +627,7 @@ function gradeForWinRate(winRate: number): string {
 export interface MatchForCardGrades {
   id: string;
   result: string;
-  localPlayerId: string | null;
-  events: string;
+  cardsPlayed: PlayedCard[];
 }
 
 export function computeCardGrades(matches: MatchForCardGrades[]) {
@@ -619,44 +647,24 @@ export function computeCardGrades(matches: MatchForCardGrades[]) {
   >();
 
   for (const m of matches) {
-    let events: HistoryEvent[];
-    try {
-      events = JSON.parse(m.events);
-    } catch {
-      continue;
-    }
-    if (!Array.isArray(events)) continue;
-
-    const playedInThisMatch = new Set<string>();
-    for (const e of events) {
-      if (e.eventType !== "history" || !e.text || !CARD_PLAY_TEXTS.has(e.text)) continue;
-      if (!m.localPlayerId || e.playerId !== m.localPlayerId) continue;
-      const card = e.params?.card;
-      if (!card?.cardId) continue;
-      if (card.cardType && EXCLUDED_CARD_TYPES.has(card.cardType)) continue;
-
-      if (!cards.has(card.cardId)) {
-        cards.set(card.cardId, {
-          cardId: card.cardId,
-          cardName: card.cardName ?? null,
-          cardType: card.cardType ?? null,
-          cardImage: card.cardImage ?? null,
+    for (const played of m.cardsPlayed) {
+      if (!cards.has(played.cardId)) {
+        cards.set(played.cardId, {
+          cardId: played.cardId,
+          cardName: played.cardName,
+          cardType: played.cardType,
+          cardImage: played.cardImage,
           totalTimesPlayed: 0,
           wins: 0,
           losses: 0,
           matchesPlayedIn: new Set(),
         });
       }
-      const agg = cards.get(card.cardId)!;
-      if (card.cardName && !agg.cardName) agg.cardName = card.cardName;
-      if (card.cardType && !agg.cardType) agg.cardType = card.cardType;
-      if (card.cardImage && !agg.cardImage) agg.cardImage = card.cardImage;
-      agg.totalTimesPlayed++;
-      playedInThisMatch.add(card.cardId);
-    }
-
-    for (const cardId of playedInThisMatch) {
-      const agg = cards.get(cardId)!;
+      const agg = cards.get(played.cardId)!;
+      if (played.cardName && !agg.cardName) agg.cardName = played.cardName;
+      if (played.cardType && !agg.cardType) agg.cardType = played.cardType;
+      if (played.cardImage && !agg.cardImage) agg.cardImage = played.cardImage;
+      agg.totalTimesPlayed += played.timesPlayed;
       agg.matchesPlayedIn.add(m.id);
       if (m.result === "WIN") agg.wins++;
       else if (m.result === "LOSS") agg.losses++;

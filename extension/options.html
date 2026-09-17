@@ -4,16 +4,41 @@
     <meta charset="utf-8" />
     <title>12 Runes — Opciones</title>
     <style>
-      body { font-family: system-ui, sans-serif; max-width: 420px; margin: 32px auto; color: #111827; }
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --text: #111827;
+        --text-muted: #6b7280;
+        --border: #d1d5db;
+        --readonly-bg: #f3f4f6;
+        --readonly-text: #4b5563;
+        --success: #16a34a;
+        --footer-border: #e5e7eb;
+        --link: #4b5563;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #16181d;
+          --text: #f3f4f6;
+          --text-muted: #9ca3af;
+          --border: #3a3f4b;
+          --readonly-bg: #21242b;
+          --readonly-text: #d1d5db;
+          --success: #4ade80;
+          --footer-border: #2d313a;
+          --link: #93c5fd;
+        }
+      }
+      body { font-family: system-ui, sans-serif; max-width: 420px; margin: 32px auto; padding: 0 16px; color: var(--text); background: var(--bg); }
       label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-      input { width: 100%; padding: 8px; font-size: 13px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 6px; }
+      input { width: 100%; padding: 8px; font-size: 13px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 6px; color: var(--text); background: var(--bg); }
       button { margin-top: 10px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
-      #status { margin-left: 8px; font-size: 12px; color: #16a34a; }
+      #status { margin-left: 8px; font-size: 12px; color: var(--success); }
       .field { margin-top: 22px; }
-      #contributorId { color: #4b5563; background: #f3f4f6; }
-      .hint { font-size: 12px; color: #6b7280; margin-top: 6px; line-height: 1.4; }
-      footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 12px; }
-      footer a { color: #4b5563; }
+      #contributorId { color: var(--readonly-text); background: var(--readonly-bg); }
+      .hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
+      footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--footer-border); font-size: 12px; }
+      footer a { color: var(--link); }
     </style>
   </head>
   <body>

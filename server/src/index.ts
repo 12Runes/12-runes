@@ -17,6 +17,7 @@ import {
   bothPerspectives,
   perspectivesForLegend,
   computeMatchupMatrix,
+  extractCardsPlayed,
   SET_NAMES,
 } from "./stats.js";
 
@@ -62,6 +63,41 @@ async function runPendingMigrations() {
 }
 await runPendingMigrations();
 
+// Relleno de una sola vez para partidas grabadas antes de que existieran
+// local/opponentCardsPlayed (migración add_cards_played): recalcula esas columnas a partir de
+// `events`, con la misma extractCardsPlayed que usa POST /matches para las partidas nuevas.
+// Corre al arrancar, antes de aceptar peticiones (igual que runPendingMigrations), así ninguna
+// petición a /stats/cards o /stats/card-grades ve nunca una fila a medias.
+//
+// Se guarda SIEMPRE el array serializado, incluso vacío ("[]") — a diferencia de
+// local/opponentBattlefields (que usan null tanto para "vacío" como para "no aplica"), aquí null
+// significa estrictamente "todavía sin calcular". Así este filtro deja de encontrar filas en
+// cuanto termina el relleno la primera vez, y no se repite el trabajo en cada reinicio.
+async function backfillCardsPlayed() {
+  const pending = await prisma.match.findMany({
+    where: { localCardsPlayed: null },
+    select: { id: true, events: true, localPlayerId: true, opponentPlayerId: true },
+  });
+  if (pending.length === 0) return;
+  for (const m of pending) {
+    let events: unknown;
+    try {
+      events = JSON.parse(m.events);
+    } catch {
+      events = [];
+    }
+    await prisma.match.update({
+      where: { id: m.id },
+      data: {
+        localCardsPlayed: JSON.stringify(extractCardsPlayed(events, m.localPlayerId)),
+        opponentCardsPlayed: JSON.stringify(extractCardsPlayed(events, m.opponentPlayerId)),
+      },
+    });
+  }
+  console.log(`[backfill] computed cardsPlayed for ${pending.length} match(es)`);
+}
+await backfillCardsPlayed();
+
 const app = Fastify({ logger: true });
 
 await app.register(cors, { origin: true });
@@ -104,13 +140,13 @@ const DECK_SELECT = {
   opponentBattlefields: true,
 } as const;
 
-// El superconjunto completo, con el log de eventos — solo lo necesitan /stats/cards y
-// /stats/card-grades, que reconstruyen qué cartas se jugaron turno a turno.
-const FULL_SELECT = {
+// Añade las cartas jugadas ya calculadas — para /stats/cards y /stats/card-grades. Ninguna
+// select de lectura pide ya `events`: las cartas jugadas se calculan una sola vez al guardar la
+// partida (ver extractCardsPlayed/POST /matches más abajo), no en cada lectura.
+const CARDS_SELECT = {
   ...DECK_SELECT,
-  localPlayerId: true,
-  opponentPlayerId: true,
-  events: true,
+  localCardsPlayed: true,
+  opponentCardsPlayed: true,
 } as const;
 
 app.post("/matches", async (request, reply) => {
@@ -151,6 +187,10 @@ app.post("/matches", async (request, reply) => {
     opponentDeck: body.opponentDeck ? JSON.stringify(body.opponentDeck) : null,
     localBattlefields: Array.isArray(body.localBattlefields) && body.localBattlefields.length > 0 ? JSON.stringify(body.localBattlefields) : null,
     opponentBattlefields: Array.isArray(body.opponentBattlefields) && body.opponentBattlefields.length > 0 ? JSON.stringify(body.opponentBattlefields) : null,
+    // Calculadas aquí, una sola vez, para que /stats/cards y /stats/card-grades no tengan que
+    // volver a recorrer `events` en cada lectura (ver extractCardsPlayed en stats.ts).
+    localCardsPlayed: JSON.stringify(extractCardsPlayed(body.events, body.localPlayerId)),
+    opponentCardsPlayed: JSON.stringify(extractCardsPlayed(body.events, body.opponentPlayerId)),
     events: JSON.stringify(body.events ?? []),
     matchFingerprint,
   };
@@ -276,7 +316,7 @@ app.get("/stats/cards", async (request, reply) => {
   // dos, si fue mirror match) corresponde a cada partida.
   const matches = await prisma.match.findMany({
     where: { OR: [{ localLegendName: query.legend }, { opponentLegendName: query.legend }], ...contributorWhere(query) },
-    select: FULL_SELECT,
+    select: CARDS_SELECT,
   });
 
   let perspectives = perspectivesForLegend(matches, query.legend);
@@ -357,7 +397,7 @@ app.get("/stats/card-grades", async (request) => {
       ...(query.legend ? { OR: [{ localLegendName: query.legend }, { opponentLegendName: query.legend }] } : {}),
       ...contributorWhere(query),
     },
-    select: FULL_SELECT,
+    select: CARDS_SELECT,
   });
 
   const perspectives = query.legend ? perspectivesForLegend(matches, query.legend) : bothPerspectives(matches);
