@@ -585,10 +585,6 @@
   </div>
 
   <div class="view" data-view="home" id="view-home">
-    <div class="dev-notice">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span><strong data-i18n="home.contributorNoticeStrong">Aviso sobre "Mis partidas":</strong> <span data-i18n="home.contributorNoticeText">mientras la extensión esté en fase de pruebas, si alguna vez la reinstalas para actualizarla, tu historial puede aparecer vacío — se genera un identificador nuevo y no hay forma de recuperar el anterior. Esto dejará de pasar en cuanto la extensión esté publicada de forma estable en la Chrome Web Store. Gracias por la comprensión — este es un proyecto que mejora gracias al feedback de todas y todos.</span></span>
-    </div>
     <div class="install-card" id="install-card">
       <div class="install-card-text">
         <div class="update-flag" id="update-flag" data-i18n="install.updateFlag">Hay una nueva versión. Repite los pasos de instalación.</div>
@@ -814,8 +810,6 @@ const I18N = {
     "scope.mine": "Mis partidas",
     "scope.community": "Comunidad",
     "scope.hint": "Sin identificar: abre el panel desde el icono de la extensión para ver solo tus partidas.",
-    "home.contributorNoticeStrong": "Aviso sobre \"Mis partidas\":",
-    "home.contributorNoticeText": "mientras la extensión esté en fase de pruebas, si alguna vez la reinstalas para actualizarla, tu historial puede aparecer vacío — se genera un identificador nuevo y no hay forma de recuperar el anterior. Esto dejará de pasar en cuanto la extensión esté publicada de forma estable en la Chrome Web Store. Gracias por la comprensión — este es un proyecto que mejora gracias al feedback de todas y todos.",
     "install.title": "Instalar la extensión",
     "install.intro": "Ya está disponible en la Chrome Web Store — instálala en un clic.",
     "install.button": "Añadir a Chrome",
@@ -948,8 +942,6 @@ const I18N = {
     "scope.mine": "My games",
     "scope.community": "Community",
     "scope.hint": "Not identified: open the panel from the extension's icon to see only your own games.",
-    "home.contributorNoticeStrong": "A note about \"My games\":",
-    "home.contributorNoticeText": "while the extension is still in testing, if you ever reinstall it to update it, your history may show up empty — a new identifier gets generated and there's no way to recover the old one. This will stop happening once the extension is stably published on the Chrome Web Store. Thanks for your understanding — this project gets better thanks to everyone's feedback.",
     "install.title": "Install the extension",
     "install.intro": "Now available on the Chrome Web Store — install it in one click.",
     "install.button": "Add to Chrome",
@@ -2187,12 +2179,14 @@ const CHANGELOG = [
       "La carga inicial de la página también es más rápida: antes se pedían los datos de cada sección (mulligan, valoración de cartas, matriz...) uno detrás de otro; ahora se piden todos a la vez.",
       "Arreglado: la página de opciones de la extensión se quedaba con colores claros fijos si usabas Chrome en modo oscuro.",
       "¡Ya está en la Chrome Web Store! El botón de instalar ahora lleva directamente a la ficha en un clic, en vez del .zip manual.",
+      "Tu identificador de \"Mis partidas\" ahora sobrevive a reinstalar la extensión (con sesión de Chrome y sync activado), y desde Opciones puedes copiarlo o restaurarlo a mano como copia de seguridad.",
     ],
     en: [
       "Several dashboard views (Performance, Matchups...) are noticeably faster now — the server was asking the database for more data than each query actually used.",
       "The page's initial load is also faster: each section's data (mulligan, card grades, matrix...) used to be requested one after another; now they're all requested at once.",
       "Fixed: the extension's options page stayed stuck in light colors if you used Chrome in dark mode.",
       "It's on the Chrome Web Store now! The install button now goes straight to the listing in one click, instead of the manual .zip.",
+      "Your \"My games\" identifier now survives reinstalling the extension (with Chrome signed in and sync on), and you can copy it or restore it by hand from Options as a backup.",
     ],
   },
 ];

@@ -458,12 +458,19 @@ async function handleConsent(tabId, answer) {
 }
 
 // Id anónimo por instalación (no identifica a la persona) para poder separar "mis partidas"
-// de las de otras instalaciones cuando varias apuntan al mismo backend compartido.
+// de las de otras instalaciones cuando varias apuntan al mismo backend compartido. Se guarda en
+// storage.sync (no local): así, con la sesión de Chrome iniciada y el sync activado, sobrevive a
+// quitar y reinstalar la extensión (y hasta a cambiar de ordenador) — antes, en storage.local,
+// se perdía en cualquiera de esos casos y con él el historial de "Mis partidas". Si no hay sync
+// disponible (sin sesión, sync desactivado), Chrome hace que se comporte igual que local, sin
+// downside. Migración de una sola vez: si ya había un id en local de antes de este cambio, se
+// reutiliza en vez de generar uno nuevo, para no perder el historial de quien actualice.
 async function getContributorId() {
-  const { contributorId } = await chrome.storage.local.get({ contributorId: null });
+  const { contributorId } = await chrome.storage.sync.get({ contributorId: null });
   if (contributorId) return contributorId;
-  const id = crypto.randomUUID();
-  await chrome.storage.local.set({ contributorId: id });
+  const { contributorId: legacyLocalId } = await chrome.storage.local.get({ contributorId: null });
+  const id = legacyLocalId || crypto.randomUUID();
+  await chrome.storage.sync.set({ contributorId: id });
   return id;
 }
 

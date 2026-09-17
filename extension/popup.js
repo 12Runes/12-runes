@@ -59,11 +59,14 @@ async function retryUpload(idx) {
   await chrome.storage.local.set({ matches });
 }
 
+// Ver el mismo comentario en background.js: storage.sync (con migración desde un id viejo en
+// local, si lo hubiera) para que sobreviva a reinstalar la extensión.
 async function getContributorId() {
-  const { contributorId } = await chrome.storage.local.get({ contributorId: null });
+  const { contributorId } = await chrome.storage.sync.get({ contributorId: null });
   if (contributorId) return contributorId;
-  const id = crypto.randomUUID();
-  await chrome.storage.local.set({ contributorId: id });
+  const { contributorId: legacyLocalId } = await chrome.storage.local.get({ contributorId: null });
+  const id = legacyLocalId || crypto.randomUUID();
+  await chrome.storage.sync.set({ contributorId: id });
   return id;
 }
 

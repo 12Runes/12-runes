@@ -16,9 +16,26 @@ import assert from "node:assert/strict";
 
 let importSeq = 0;
 
+// storage.local y storage.sync se comportan igual desde el punto de vista de la API (get/set
+// con objeto de defaults) — se genera el mismo mock para las dos, con su propio Map por detrás,
+// para que un test pueda comprobar en cuál de las dos acabó escribiendo background.js.
+function makeStorageAreaMock(store) {
+  return {
+    async get(defaults) {
+      const out = {};
+      for (const k of Object.keys(defaults)) out[k] = store.has(k) ? store.get(k) : defaults[k];
+      return out;
+    },
+    async set(obj) {
+      for (const [k, v] of Object.entries(obj)) store.set(k, v);
+    },
+  };
+}
+
 function makeChromeMock() {
   const sessionStore = new Map();
   const localStore = new Map();
+  const syncStore = new Map();
   const sentMessages = []; // { tabId, msg }
   let onMessageListener = null;
   let onRemovedListener = null;
@@ -37,16 +54,8 @@ function makeChromeMock() {
           sessionStore.delete(key);
         },
       },
-      local: {
-        async get(defaults) {
-          const out = {};
-          for (const k of Object.keys(defaults)) out[k] = localStore.has(k) ? localStore.get(k) : defaults[k];
-          return out;
-        },
-        async set(obj) {
-          for (const [k, v] of Object.entries(obj)) localStore.set(k, v);
-        },
-      },
+      local: makeStorageAreaMock(localStore),
+      sync: makeStorageAreaMock(syncStore),
     },
     tabs: {
       sendMessage(tabId, msg) {
@@ -71,6 +80,8 @@ function makeChromeMock() {
   return {
     chrome,
     sentMessages,
+    localStore,
+    syncStore,
     lastMessageOfType(type) {
       return [...sentMessages].reverse().find((m) => m.msg.type === type)?.msg ?? null;
     },
@@ -285,4 +296,35 @@ test("un Bo3 real: restart entre partidas encadena Game 1 y Game 2 sin perder ni
   assert.equal(fetchCalls.length, 2, "las dos partidas del Bo3 deben subir, cada una una sola vez");
   const results = fetchCalls.map((c) => c.body.result).sort();
   assert.deepEqual(results, ["LOSS", "WIN"]);
+});
+
+test("contributorId: se guarda en storage.sync (no local) para sobrevivir a una reinstalación", async () => {
+  const mock = makeChromeMock();
+  const fetchCalls = [];
+  await loadBackground(mock.chrome, fakeFetch(fetchCalls));
+
+  await playToTurn(mock, 7, 4);
+  await closeChannel(mock, 7);
+  mock.dispatch({ type: "confirm-series-game", pendingId: mock.lastMessageOfType("series-ended").pendingGames[0].pendingId, result: "WIN" }, 7);
+  await wait();
+
+  assert.equal(fetchCalls.length, 1);
+  assert.ok(mock.syncStore.get("contributorId"), "el id debe quedar guardado en storage.sync");
+  assert.equal(mock.localStore.has("contributorId"), false, "no debe crear uno nuevo en storage.local");
+  assert.equal(fetchCalls[0].body.contributorId, mock.syncStore.get("contributorId"));
+});
+
+test("contributorId: si ya había uno en storage.local (de antes de este cambio), se reutiliza en vez de generar uno nuevo", async () => {
+  const mock = makeChromeMock();
+  const fetchCalls = [];
+  mock.localStore.set("contributorId", "legacy-id-de-antes-del-cambio");
+  await loadBackground(mock.chrome, fakeFetch(fetchCalls));
+
+  await playToTurn(mock, 8, 4);
+  await closeChannel(mock, 8);
+  mock.dispatch({ type: "confirm-series-game", pendingId: mock.lastMessageOfType("series-ended").pendingGames[0].pendingId, result: "WIN" }, 8);
+  await wait();
+
+  assert.equal(fetchCalls[0].body.contributorId, "legacy-id-de-antes-del-cambio", "debe migrar el id viejo, no perder el historial generando uno al azar");
+  assert.equal(mock.syncStore.get("contributorId"), "legacy-id-de-antes-del-cambio", "y dejarlo ya migrado a sync para la próxima vez");
 });

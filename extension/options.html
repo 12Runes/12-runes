@@ -37,6 +37,13 @@
       .field { margin-top: 22px; }
       #contributorId { color: var(--readonly-text); background: var(--readonly-bg); }
       .hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
+      .id-row { display: flex; gap: 6px; }
+      .id-row input { flex: 1; }
+      .id-row button { margin-top: 0; flex: 0 0 auto; }
+      #restore-status { margin-left: 6px; font-size: 12px; color: var(--success); }
+      details.restore { margin-top: 10px; font-size: 12px; }
+      details.restore summary { cursor: pointer; color: var(--link); }
+      details.restore .id-row { margin-top: 8px; }
       footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--footer-border); font-size: 12px; }
       footer a { color: var(--link); }
     </style>
@@ -50,11 +57,24 @@
 
     <div class="field">
       <label for="contributorId">Tu identificador anónimo</label>
-      <input id="contributorId" type="text" readonly />
+      <div class="id-row">
+        <input id="contributorId" type="text" readonly />
+        <button id="copy-id" type="button">Copiar</button>
+      </div>
       <p class="hint">
         No es tu cuenta de tcg-arena.fr ni de Google, es un id aleatorio generado en este
         navegador. Inclúyelo si escribes para pedir que se borren tus partidas grabadas.
+        Guárdalo en algún sitio seguro — si alguna vez reinstalas la extensión, podrás
+        recuperar tu historial pegándolo abajo.
       </p>
+      <details class="restore">
+        <summary>Restaurar un id guardado</summary>
+        <div class="id-row">
+          <input id="restore-id-input" type="text" placeholder="Pega aquí tu id anterior" />
+          <button id="restore-id" type="button">Restaurar</button>
+        </div>
+        <span id="restore-status"></span>
+      </details>
     </div>
 
     <footer>
