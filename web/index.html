@@ -2093,6 +2093,14 @@ async function refreshLegendSelect() {
   return true;
 }
 
+// Las cuatro secciones de abajo (mulligan, valoración de cartas, matriz, y el propio tracker) no
+// se pisan entre sí — cada una lee/escribe sus propias variables de módulo y su propia parte del
+// DOM — así que sus llamadas a la API son independientes y pueden salir todas a la vez en vez de
+// esperar cada una a que termine la anterior. Antes iban en cadena con `await`, sumando sus
+// tiempos de red uno detrás de otro; en paralelo, el tiempo total lo marca la más lenta de las
+// cuatro, no la suma de las cuatro. Dentro del tracker sí hay una dependencia real
+// (loadForSelection lee el `<select>` de mazo que rellena populateDeckOptions, así que esas dos
+// SÍ van encadenadas) — se preserva con `.then`.
 async function reloadAll() {
   setSelectLoading(document.getElementById("legend-select"), t("option.loading"));
   setLoading(document.getElementById("matchups-table"));
@@ -2101,16 +2109,17 @@ async function reloadAll() {
   allMatchups = matchups;
 
   const hasLegends = await refreshLegendSelect();
-  await initMulliganSection();
   populateCardGradesLegendOptions();
-  await loadCardGrades(document.getElementById("grade-legend-select").value);
-  await initMatrixSection();
-  if (!hasLegends) return;
 
-  const legendSelect = document.getElementById("legend-select");
-  populateOpponentOptions(legendSelect.value);
-  await populateDeckOptions(legendSelect.value);
-  await loadForSelection();
+  const tasks = [initMulliganSection(), loadCardGrades(document.getElementById("grade-legend-select").value), initMatrixSection()];
+
+  if (hasLegends) {
+    const legendSelect = document.getElementById("legend-select");
+    populateOpponentOptions(legendSelect.value);
+    tasks.push(populateDeckOptions(legendSelect.value).then(() => loadForSelection()));
+  }
+
+  await Promise.all(tasks);
 }
 
 // --- Tema claro/oscuro -----------------------------------------------------------------
@@ -2184,10 +2193,12 @@ const CHANGELOG = [
     date: "2026-09-17",
     es: [
       "Varias vistas del panel (Rendimiento, Matchups...) van bastante más rápido — el servidor pedía a la base de datos más datos de los que de verdad usaba en cada consulta.",
+      "La carga inicial de la página también es más rápida: antes se pedían los datos de cada sección (mulligan, valoración de cartas, matriz...) uno detrás de otro; ahora se piden todos a la vez.",
       "Arreglado: la página de opciones de la extensión se quedaba con colores claros fijos si usabas Chrome en modo oscuro.",
     ],
     en: [
       "Several dashboard views (Performance, Matchups...) are noticeably faster now — the server was asking the database for more data than each query actually used.",
+      "The page's initial load is also faster: each section's data (mulligan, card grades, matrix...) used to be requested one after another; now they're all requested at once.",
       "Fixed: the extension's options page stayed stuck in light colors if you used Chrome in dark mode.",
     ],
   },
