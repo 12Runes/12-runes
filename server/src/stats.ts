@@ -235,6 +235,16 @@ export function computeCardStats(matches: MatchForCardStats[]) {
   const onPlay = splitBucket();
   const onDraw = splitBucket();
 
+  // Los artes alternativos (VEN-112 / VEN-112a) y las reimpresiones de un mismo set a otro llevan
+  // un cardId distinto pero son la misma carta a efectos de juego: se agrupan por NOMBRE para que
+  // salgan en una sola fila. Pre-pase para resolver el nombre de cada cardId aunque alguna partida
+  // vieja lo guardase a null (así no se separan de las que sí lo tienen).
+  const nameById = new Map<string, string>();
+  for (const m of matches) {
+    for (const p of m.cardsPlayed) if (p.cardName && !nameById.has(p.cardId)) nameById.set(p.cardId, p.cardName);
+  }
+  const groupKey = (cardId: string) => nameById.get(cardId) ?? cardId;
+
   const cards = new Map<
     string,
     {
@@ -242,6 +252,9 @@ export function computeCardStats(matches: MatchForCardStats[]) {
       cardName: string | null;
       cardType: string | null;
       cardImage: string | null;
+      // Partidas en las que se jugó cada versión (cardId) del grupo, para elegir la principal
+      // (la más jugada) y devolver todas en `cardIds`.
+      idStats: Map<string, { matches: number; image: string | null }>;
       matchesPlayedIn: Set<string>;
       totalTimesPlayed: number;
       played: { wins: number; losses: number };
@@ -261,12 +274,14 @@ export function computeCardStats(matches: MatchForCardStats[]) {
     }
 
     for (const played of m.cardsPlayed) {
-      if (!cards.has(played.cardId)) {
-        cards.set(played.cardId, {
+      const key = groupKey(played.cardId);
+      if (!cards.has(key)) {
+        cards.set(key, {
           cardId: played.cardId,
           cardName: played.cardName,
           cardType: played.cardType,
           cardImage: played.cardImage,
+          idStats: new Map(),
           matchesPlayedIn: new Set(),
           totalTimesPlayed: 0,
           played: { wins: 0, losses: 0 },
@@ -274,7 +289,16 @@ export function computeCardStats(matches: MatchForCardStats[]) {
           onDraw: splitBucket(),
         });
       }
-      const agg = cards.get(played.cardId)!;
+      const agg = cards.get(key)!;
+      const idStat = agg.idStats.get(played.cardId) ?? { matches: 0, image: null };
+      idStat.matches++;
+      if (played.cardImage && !idStat.image) idStat.image = played.cardImage;
+      agg.idStats.set(played.cardId, idStat);
+      // Si en una misma partida salieron dos versiones de la carta, la partida cuenta una sola vez.
+      if (agg.matchesPlayedIn.has(m.id)) {
+        agg.totalTimesPlayed += played.timesPlayed;
+        continue;
+      }
       // Partidas grabadas antes de que empezáramos a guardar la imagen tienen estos campos a
       // null; si esta carta ya se vio en una de esas, no dejamos que ese null se quede fijo
       // para siempre — en cuanto aparece una jugada con datos completos, se adopta.
@@ -301,11 +325,19 @@ export function computeCardStats(matches: MatchForCardStats[]) {
       const lossesWhenNotPlayed = overall.losses - c.played.losses;
       const winRateWhenPlayed = winLoss(c.played.wins, c.played.losses);
       const winRateWhenNotPlayed = winLoss(winsWhenNotPlayed, lossesWhenNotPlayed);
+      const byUse = Array.from(c.idStats.entries()).sort((a, b) => b[1].matches - a[1].matches);
+      const primary = byUse[0];
       return {
-        cardId: c.cardId,
+        // La versión más jugada da nombre corto/imagen; `cardIds` lista todas para poder cruzar
+        // con el mazo (p. ej. el simulador de mulligans busca por el id que trae cada carta).
+        cardId: primary ? primary[0] : c.cardId,
+        cardIds: byUse.map(([id]) => id),
         cardName: c.cardName,
         cardType: c.cardType,
-        cardImage: c.cardImage,
+        cardImage: primary?.[1].image ?? c.cardImage,
+        // Una imagen por versión distinta (misma ordenación que `cardIds`), para que la web pueda
+        // enseñar todas al pasar el ratón por una fila que agrupa varias.
+        cardImages: Array.from(new Set(byUse.map(([, s]) => s.image).filter((x): x is string => !!x))),
         gamesPlayed,
         totalTimesPlayed: c.totalTimesPlayed,
         gamesNotPlayed: totalGames - gamesPlayed,

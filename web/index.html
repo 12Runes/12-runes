@@ -393,9 +393,11 @@
     transition: opacity 0.1s ease, transform 0.1s ease;
     border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,0.35); overflow: hidden;
     border: 1px solid var(--border);
+    display: flex; gap: 2px; background: var(--border);
   }
   #card-preview.visible { opacity: 1; transform: scale(1); }
   #card-preview img { display: block; width: 220px; height: auto; }
+  #card-preview img[hidden] { display: none; }
 
   .btn-primary {
     font: inherit; font-size: 13px; font-weight: 700; padding: 10px 18px; border-radius: 10px; border: none;
@@ -812,7 +814,7 @@
   </div>
 </main>
 
-<div id="card-preview"><img id="card-preview-img" alt="" /></div>
+<div id="card-preview"><img id="card-preview-img" alt="" /><img id="card-preview-img2" alt="" hidden /></div>
 <div id="mull-tooltip"></div>
 
 <script>
@@ -1209,12 +1211,16 @@ function el(tag, attrs = {}, children = []) {
 // mousemove a partir de qué hay bajo el cursor, cada movimiento se autocorrige solo.
 const preview = document.getElementById("card-preview");
 const previewImg = document.getElementById("card-preview-img");
+const previewImg2 = document.getElementById("card-preview-img2");
 let currentPreviewUrl = null;
 
+// Acepta una URL o un array (filas que agrupan varias versiones de una carta: se enseñan todas,
+// unidas con "|" en el data-attribute).
 function markCardHover(node, imageUrl) {
-  if (!imageUrl) return;
+  const urls = [].concat(imageUrl ?? []).filter(Boolean).slice(0, 2);
+  if (urls.length === 0) return;
   node.classList.add("card-name-cell");
-  node.dataset.cardImage = imageUrl;
+  node.dataset.cardImage = urls.join("|");
 }
 
 document.addEventListener("mousemove", (e) => {
@@ -1229,16 +1235,20 @@ document.addEventListener("mousemove", (e) => {
     return;
   }
 
+  const urls = url.split("|");
   if (url !== currentPreviewUrl) {
     currentPreviewUrl = url;
-    previewImg.src = url;
+    previewImg.src = urls[0];
+    previewImg2.hidden = urls.length < 2;
+    if (urls.length > 1) previewImg2.src = urls[1];
     preview.classList.add("visible");
   }
 
   const margin = 16;
+  const pw = 224 * urls.length + 6;
   let x = e.clientX + margin;
   let y = e.clientY + margin;
-  if (x + 230 > window.innerWidth) x = e.clientX - 230 - margin;
+  if (x + pw > window.innerWidth) x = Math.max(8, e.clientX - pw - margin);
   if (y + 320 > window.innerHeight) y = Math.max(8, window.innerHeight - 320 - margin);
   preview.style.left = `${x}px`;
   preview.style.top = `${y}px`;
@@ -1367,7 +1377,7 @@ function renderCardsTable(cards) {
       const td = el("td", { class: col.num ? "num" : "" });
       if (col.delta && raw != null) td.className += raw >= 0 ? " delta-pos" : " delta-neg";
       td.textContent = text;
-      if (col.key === "cardName") markCardHover(td, row.cardImage);
+      if (col.key === "cardName") markCardHover(td, row.cardImages?.length ? row.cardImages : row.cardImage);
       tr.appendChild(td);
     }
     tbody.appendChild(tr);
@@ -1754,7 +1764,9 @@ async function generateMulliganHand() {
   if (opponent) qs.set("opponent", opponent);
   setLoading(container);
   const { cards: cardStats } = await getJSON(`/stats/cards?${qs}`);
-  const statsById = new Map(cardStats.map((c) => [c.cardId, c]));
+  // Una fila puede agrupar varias versiones de la misma carta (arte alternativo, reimpresión):
+  // se indexa por todos sus ids para encontrarla sea cual sea la versión que lleve el mazo.
+  const statsById = new Map(cardStats.flatMap((c) => (c.cardIds ?? [c.cardId]).map((id) => [id, c])));
 
   const shuffled = pool.slice();
   for (let i = shuffled.length - 1; i > 0; i--) {
